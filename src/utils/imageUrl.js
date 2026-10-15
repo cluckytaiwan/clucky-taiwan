@@ -8,20 +8,8 @@
  * oleh Supabase free tier dan akan mengembalikan gambar aslinya dengan aman tanpa error.
  */
 
-export function getOptimizedImageUrl(url, { width = 400, quality = 80 } = {}) {
-  if (!url) return url;
-  
-  // Hanya optimasi URL dari Supabase Storage milik kita
-  if (!url.includes("supabase.co/storage/v1/object/public/")) {
-    return url;
-  }
-  
-  // Format Supabase Image Transformations:
-  // /storage/v1/render/image/public/bucket/path
-  const optimizedUrl = url.replace(
-    "/storage/v1/object/public/", 
-    "/storage/v1/render/image/public/"
-  );
-  
-  return `${optimizedUrl}?width=${width}&quality=${quality}&format=webp`;
+export function getOptimizedImageUrl(url, { width = 400, height = width, quality = 80 } = {}) {
+  // Menggunakan URL asli karena proyek saat ini belum mengaktifkan Supabase Image Transformations
+  // yang sebelumnya menyebabkan gambar tidak terbuka (error dari path /render/image/).
+  return url;
 }

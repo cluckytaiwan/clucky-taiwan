@@ -1,6 +1,7 @@
 import { lazy, Suspense } from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AdminAuthProvider } from "./context/AdminAuthContext";
+import { OrderNotificationProvider } from "./context/OrderNotificationContext";
 import ProtectedRoute from "./components/ProtectedRoute";
 import { Toaster } from "react-hot-toast";
 import VariantBottomSheet from "./components/VariantBottomSheet";
@@ -13,9 +14,11 @@ import ProductDetailPage from "./pages/public/ProductDetailPage";
 
 // Halaman admin — lazy loaded agar tidak masuk bundle publik
 const AdminLogin = lazy(() => import("./pages/admin/AdminLogin"));
+const AdminDashboard = lazy(() => import("./pages/admin/AdminDashboard"));
+const AdminSales = lazy(() => import("./pages/admin/AdminSales"));
 const AdminProducts = lazy(() => import("./pages/admin/AdminProducts"));
 const AdminCategories = lazy(() => import("./pages/admin/AdminCategories"));
-const AdminOrders = lazy(() => import("./pages/admin/AdminOrders"));
+const AdminLowStock = lazy(() => import("./pages/admin/AdminLowStock"));
 const AdminLayout = lazy(() => import("./layouts/AdminLayout"));
 
 function AdminFallback() {
@@ -29,14 +32,18 @@ function AdminFallback() {
 export default function App() {
   return (
     <BrowserRouter>
-      <Toaster position="top-center" toastOptions={{
-        duration: 3000,
-        style: {
-          borderRadius: '12px',
-          background: '#333',
-          color: '#fff',
-        },
-      }} />
+      <Toaster
+        position="top-center"
+        toastOptions={{
+          duration: 3000,
+          style: {
+            borderRadius: '12px',
+            background: '#333',
+            color: '#fff',
+          },
+        }}
+        containerStyle={{ top: 16, right: 16 }}
+      />
       <VariantBottomSheet />
       <AdminAuthProvider>
         <Routes>
@@ -59,17 +66,21 @@ export default function App() {
             path="/admin"
             element={
               <ProtectedRoute>
-                <Suspense fallback={<AdminFallback />}>
-                  <AdminLayout />
-                </Suspense>
+                <OrderNotificationProvider>
+                  <Suspense fallback={<AdminFallback />}>
+                    <AdminLayout />
+                  </Suspense>
+                </OrderNotificationProvider>
               </ProtectedRoute>
             }
           >
             {/* Index redirect: /admin → /admin/dashboard */}
             <Route index element={<Navigate to="dashboard" replace />} />
-            <Route path="dashboard" element={<AdminOrders />} />
+            <Route path="dashboard" element={<AdminDashboard />} />
+            <Route path="sales" element={<AdminSales />} />
             <Route path="categories" element={<AdminCategories />} />
             <Route path="products" element={<AdminProducts />} />
+            <Route path="products/low-stock" element={<AdminLowStock />} />
           </Route>
         </Routes>
       </AdminAuthProvider>

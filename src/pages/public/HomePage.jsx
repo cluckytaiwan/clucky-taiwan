@@ -135,7 +135,7 @@ export default function HomePage() {
 
         {/* Loading skeleton */}
         {loading && (
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 lg:grid-cols-4">
             {Array.from({ length: 4 }).map((_, i) => (
               <div key={i} className="animate-pulse rounded-2xl bg-neutral-200/60 h-64" />
             ))}
@@ -164,19 +164,13 @@ export default function HomePage() {
         )}
 
         {!loading && !error && displayedProducts.length > 0 && (
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 lg:grid-cols-4">
             {displayedProducts.map((product) => (
               <ProductCard key={product.id} product={product} />
             ))}
           </div>
         )}
       </section>
-
-      <footer className="border-t border-neutral-200 py-8 text-center">
-        <p className="font-body text-sm text-neutral-500">
-          © {new Date().getFullYear()} Clucky Taiwan. Selera autentik Taiwan.
-        </p>
-      </footer>
 
       <CartDrawer isOpen={cartOpen} onClose={() => setCartOpen(false)} onCheckout={handleCheckout} />
     </div>

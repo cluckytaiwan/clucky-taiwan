@@ -1,5 +1,5 @@
 // src/components/BudgetRecommender.jsx
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { formatRupiah } from "../utils/formatCurrency";
 import { getRecommendations, getMinAvailablePrice } from "../utils/budgetRecommender";
@@ -9,7 +9,7 @@ import { getOptimizedImageUrl } from "../utils/imageUrl";
 import toast from "react-hot-toast";
 import {
   Sparkles, ShoppingBag, ArrowRight, Tag,
-  ChevronRight, Star, Zap, TrendingUp,
+  ChevronRight, ChevronLeft, Star, Zap, TrendingUp,
 } from "lucide-react";
 import "./BudgetRecommender.css";
 
@@ -43,6 +43,12 @@ export default function BudgetRecommender({ products, onCartOpen }) {
   const { addItem } = useCartStore();
   const { openModal } = useVariantModalStore();
   const navigate = useNavigate();
+  const sliderRef = useRef(null);
+
+  // Geser slider horizontal rekomendasi (kiri/kanan)
+  const scrollSlider = useCallback((dir) => {
+    sliderRef.current?.scrollBy({ left: dir * 320, behavior: "smooth" });
+  }, []);
 
   // ── Harga minimum produk tersedia ─────────────────────────────────────────
   const minPrice = useMemo(() => getMinAvailablePrice(products) || SLIDER_MIN_FALLBACK, [products]);
@@ -279,23 +285,48 @@ export default function BudgetRecommender({ products, onCartOpen }) {
           ) : (
             /* Ada rekomendasi */
             <div>
-              <p className="text-xs font-bold text-neutral-400 uppercase tracking-widest mb-4">
-                {recommendations.length} Rekomendasi untuk {formatRupiah(budget)}
-              </p>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                {recommendations.map((combo, idx) => {
-                  const rank = RANK_CONFIG[idx] ?? RANK_CONFIG[2];
-                  const RankIcon = rank.icon;
-                  const needsVariant = comboNeedsVariant(combo.items);
-                  const efficiency = Math.round((combo.totalPrice / budget) * 100);
-                  const comboId = combo.items.map(i => i.id).sort().join("-");
-                  const isAdded = addedCombos.has(comboId);
+              <div className="mb-4 flex items-center justify-between">
+                <p className="text-xs font-bold text-neutral-400 uppercase tracking-widest">
+                  {recommendations.length} Rekomendasi untuk {formatRupiah(budget)}
+                </p>
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => scrollSlider(-1)}
+                    aria-label="Rekomendasi sebelumnya"
+                    className="flex h-9 w-9 items-center justify-center rounded-full border border-neutral-200 bg-white text-neutral-600 transition-colors hover:border-primary hover:text-primary"
+                  >
+                    <ChevronLeft size={16} />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => scrollSlider(1)}
+                    aria-label="Rekomendasi selanjutnya"
+                    className="flex h-9 w-9 items-center justify-center rounded-full border border-neutral-200 bg-white text-neutral-600 transition-colors hover:border-primary hover:text-primary"
+                  >
+                    <ChevronRight size={16} />
+                  </button>
+                </div>
+              </div>
 
-                  return (
-                    <div
-                      key={`${combo.items.map(i => i.id).join("-")}-${idx}`}
-                      className="rec-card bg-white rounded-2xl border border-neutral-100 shadow-sm flex flex-col overflow-hidden"
-                    >
+              <div className="relative">
+                <div
+                  ref={sliderRef}
+                  className="flex gap-4 overflow-x-auto scroll-smooth snap-x snap-mandatory scrollbar-hide -mx-6 px-6 pb-4 sm:-mx-10 sm:px-10"
+                >
+                  {recommendations.map((combo, idx) => {
+                    const rank = RANK_CONFIG[idx] ?? RANK_CONFIG[2];
+                    const RankIcon = rank.icon;
+                    const needsVariant = comboNeedsVariant(combo.items);
+                    const efficiency = Math.round((combo.totalPrice / budget) * 100);
+                    const comboId = combo.items.map(i => i.id).sort().join("-");
+                    const isAdded = addedCombos.has(comboId);
+
+                    return (
+                      <div
+                        key={`${combo.items.map(i => i.id).join("-")}-${idx}`}
+                        className="rec-card snap-start shrink-0 w-[280px] sm:w-[320px] bg-white rounded-2xl border border-neutral-100 shadow-sm flex flex-col overflow-hidden"
+                      >
                       {/* Card header dengan badge ranking */}
                       <div className="px-4 pt-4 pb-3 border-b border-neutral-50">
                         <div className="flex items-center justify-between mb-1">
@@ -409,6 +440,7 @@ export default function BudgetRecommender({ products, onCartOpen }) {
                     </div>
                   );
                 })}
+                </div>
               </div>
 
               {/* Hint tambahan jika ada produk bervarian */}

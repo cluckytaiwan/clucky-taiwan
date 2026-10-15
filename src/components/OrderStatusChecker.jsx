@@ -1,11 +1,12 @@
 // src/components/OrderStatusChecker.jsx
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { statusLabel, fulfillmentLabel } from "../constants/orderStatus";
 import { formatRupiah } from "../utils/formatCurrency";
 import { CreditCard, Loader2, ChefHat, ShoppingBag, CheckCircle2, AlertCircle, XCircle, History, ChevronRight } from "lucide-react";
 import { clearPendingPayment } from "./CheckoutForm";
 import { loadSnap } from "../utils/loadSnap";
 import { getOrderHistory } from "../utils/storage";
+import { useOrderRealtime } from "../hooks/useOrderRealtime";
 
 /* ─── Komponen Timeline Progress ───────────────────────────── */
 function OrderProgress({ status, fulfillmentStatus, paidAt }) {
@@ -164,6 +165,21 @@ export default function OrderStatusChecker() {
   const [loading, setLoading] = useState(false);
   const [payLoading, setPayLoading] = useState(false);
   const [history, setHistory] = useState([]);
+  // isLive: true saat koneksi Supabase Realtime aktif
+  const [isLive, setIsLive] = useState(false);
+
+  // Callback stabil untuk useOrderRealtime — diperbarui otomatis saat data baru masuk
+  const handleRealtimeUpdate = useCallback((updatedOrder) => {
+    setResult(updatedOrder);
+  }, []);
+
+  // Subscribe ke Supabase Realtime — aktif hanya saat result sudah ditampilkan
+  useOrderRealtime(
+    result ? result.kode_pesanan : null,
+    result ? phone.trim() : null,
+    handleRealtimeUpdate,
+    setIsLive
+  );
 
   // Muat riwayat pesanan dari perangkat
   useEffect(() => {
@@ -217,13 +233,6 @@ export default function OrderStatusChecker() {
       setLoading(false);
     }
   }
-
-  function handleCheck(e) {
-    e.preventDefault();
-    if (!orderId || !phone) return;
-    performCheck(orderId.trim(), phone.trim());
-  }
-
   /* Buka Snap dengan token yang ada di result */
   async function handlePayNow() {
     if (!result?.snap_token) return;
@@ -261,65 +270,54 @@ export default function OrderStatusChecker() {
 
   return (
     <div className="max-w-3xl mx-auto p-4 sm:p-8">
-      {/* Form Cek Pesanan (Horizontal) */}
-      <form onSubmit={handleCheck} className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-8 max-w-2xl mx-auto">
-        <input
-          type="text"
-          value={orderId}
-          onChange={(e) => setOrderId(e.target.value)}
-          placeholder="Kode Pesanan"
-          className="w-full sm:w-[200px] border border-neutral-200 rounded-xl px-5 py-3 focus:outline-none focus:ring-2 focus:ring-[#D63E4D] uppercase text-sm bg-white"
-        />
-        <input
-          type="tel"
-          value={phone}
-          onChange={(e) => setPhone(e.target.value)}
-          placeholder="Nomor HP"
-          className="w-full sm:w-[220px] border border-neutral-200 rounded-xl px-5 py-3 focus:outline-none focus:ring-2 focus:ring-[#D63E4D] text-sm bg-white"
-        />
-        <button
-          type="submit"
-          disabled={loading}
-          className="w-full sm:w-[120px] bg-[#D63E4D] hover:bg-[#c03544] disabled:opacity-50 text-white font-bold py-3 rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#D63E4D] focus-visible:ring-offset-2 flex items-center justify-center gap-2 transition-colors"
-        >
-          {loading && <Loader2 size={16} className="animate-spin" />}
-          {loading ? "Mencari..." : "Cek"}
-        </button>
-      </form>
-
       {error && (
         <p className="text-sm text-[#D63E4D] bg-[#fae4e8]/50 border border-[#fae4e8] rounded-lg p-3 mb-6 max-w-2xl mx-auto text-center">
           {error}
         </p>
       )}
 
-      {/* Daftar Riwayat Pesanan (muncul jika belum ada hasil pencarian) */}
-      {!result && !loading && history.length > 0 && (
-        <div className="max-w-2xl mx-auto mt-10">
-          <div className="flex items-center gap-2 mb-4">
-            <History size={20} className="text-neutral-500" />
-            <h3 className="font-display font-bold text-lg text-neutral-900">Riwayat Pesanan Anda</h3>
-          </div>
-          <div className="space-y-3">
-            {history.map((order, idx) => (
-              <div 
-                key={idx}
-                onClick={() => handleHistoryClick(order)}
-                className="bg-white border border-neutral-200 rounded-2xl p-4 flex items-center justify-between cursor-pointer hover:border-[#D63E4D]/50 hover:shadow-sm transition-all"
-              >
-                <div>
-                  <p className="font-mono font-bold text-neutral-900">{order.kode}</p>
-                  <p className="text-sm text-neutral-500 mt-0.5">
-                    {new Date(order.date).toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute:"2-digit" })}
-                  </p>
-                </div>
-                <div className="flex items-center gap-4">
-                  <span className="font-bold text-neutral-900">{formatRupiah(order.total)}</span>
-                  <ChevronRight size={20} className="text-neutral-400" />
-                </div>
+      {/* Daftar Riwayat Pesanan — ditampilkan langsung (muncul jika belum ada hasil pencarian) */}
+      {!result && !loading && (
+        <div className="max-w-2xl mx-auto">
+          {history.length > 0 ? (
+            <>
+              <div className="flex items-center gap-2 mb-4">
+                <History size={20} className="text-neutral-500" />
+                <h3 className="font-display font-bold text-lg text-neutral-900">Riwayat Pesanan Anda</h3>
               </div>
-            ))}
-          </div>
+              <div className="space-y-3">
+                {history.map((order, idx) => (
+                  <div 
+                    key={idx}
+                    onClick={() => handleHistoryClick(order)}
+                    className="bg-white border border-neutral-200 rounded-2xl p-4 flex items-center justify-between cursor-pointer hover:border-[#D63E4D]/50 hover:shadow-sm transition-all"
+                  >
+                    <div>
+                      <p className="font-mono font-bold text-neutral-900">{order.kode}</p>
+                      <p className="text-sm text-neutral-500 mt-0.5">
+                        {new Date(order.date).toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute:"2-digit" })}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-4">
+                      <span className="font-bold text-neutral-900">{formatRupiah(order.total)}</span>
+                      <ChevronRight size={20} className="text-neutral-400" />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </>
+          ) : (
+            /* Empty state — belum ada riwayat pesanan */
+            <div className="text-center py-16">
+              <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-neutral-100">
+                <History size={28} className="text-neutral-400" />
+              </div>
+              <p className="font-body font-semibold text-neutral-700 mb-1">Belum ada riwayat pesanan</p>
+              <p className="font-body text-sm text-neutral-500">
+                Pesanan yang kamu buat akan muncul di sini.
+              </p>
+            </div>
+          )}
         </div>
       )}
 
@@ -327,7 +325,19 @@ export default function OrderStatusChecker() {
         <div className="border border-neutral-200 rounded-3xl overflow-hidden bg-white shadow-sm">
           {/* Header */}
           <div className="px-8 py-5 flex items-center justify-between border-b border-neutral-100 bg-white">
-            <span className="text-base font-bold text-neutral-800">Detail Pesanan</span>
+            <div className="flex items-center gap-2.5">
+              <span className="text-base font-bold text-neutral-800">Detail Pesanan</span>
+              {/* Indikator Live — muncul saat Supabase Realtime aktif */}
+              {isLive && (
+                <span className="inline-flex items-center gap-1.5 text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full">
+                  <span className="relative flex h-2 w-2">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                  </span>
+                  Live
+                </span>
+              )}
+            </div>
             <span className="font-mono text-sm font-bold text-[#D63E4D] bg-[#fae4e8] px-4 py-1.5 rounded-lg">
               {result.kode_pesanan}
             </span>

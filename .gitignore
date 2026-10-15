@@ -32,3 +32,6 @@ Thumbs.db
 
 # Build output
 dist/
+.vercel
+.env*
+!.env.example
