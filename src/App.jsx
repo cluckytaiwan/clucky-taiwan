@@ -18,7 +18,7 @@ const AdminDashboard = lazy(() => import("./pages/admin/AdminDashboard"));
 const AdminSales = lazy(() => import("./pages/admin/AdminSales"));
 const AdminProducts = lazy(() => import("./pages/admin/AdminProducts"));
 const AdminCategories = lazy(() => import("./pages/admin/AdminCategories"));
-const AdminLowStock = lazy(() => import("./pages/admin/AdminLowStock"));
+
 const AdminLayout = lazy(() => import("./layouts/AdminLayout"));
 
 function AdminFallback() {
@@ -80,7 +80,7 @@ export default function App() {
             <Route path="sales" element={<AdminSales />} />
             <Route path="categories" element={<AdminCategories />} />
             <Route path="products" element={<AdminProducts />} />
-            <Route path="products/low-stock" element={<AdminLowStock />} />
+
           </Route>
         </Routes>
       </AdminAuthProvider>
