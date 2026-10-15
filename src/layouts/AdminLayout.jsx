@@ -2,7 +2,7 @@ import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import {
   LayoutDashboard, Package, Tags, LogOut,
-  Bell, BellOff, ShoppingBag, AlertTriangle, ChevronRight,
+  Bell, BellOff, ShoppingBag,
 } from "lucide-react";
 import { useAdminAuth } from "../context/AdminAuthContext";
 import { useOrderNotification } from "../context/OrderNotificationContext";
@@ -43,8 +43,7 @@ export default function AdminLayout() {
   }, [setupRealtime, teardownRealtime]);
 
 
-  // Expand submenu Produk jika path berada di bawahnya
-  const productsActive = currentPath.startsWith("/admin/products");
+
 
   async function handleLogout() {
     await logout();
@@ -107,53 +106,27 @@ export default function AdminLayout() {
           {/* Kategori */}
           <NavLink to="/admin/categories" icon={Tags} label="Kategori" />
 
-          {/* Produk + Submenu */}
-          <div>
-            {/* Link induk Produk */}
-            <Link
-              to="/admin/products"
-              className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-colors font-medium text-sm ${
+          {/* Produk — badge stok rendah langsung di nav item */}
+          <Link
+            to="/admin/products"
+            className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-colors font-medium text-sm ${
+              currentPath === "/admin/products"
+                ? "bg-primary text-white shadow-sm"
+                : "text-neutral-600 hover:bg-primary/10 hover:text-primary"
+            }`}
+          >
+            <Package size={18} />
+            <span className="flex-1">Produk</span>
+            {lowStockCount > 0 && (
+              <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${
                 currentPath === "/admin/products"
-                  ? "bg-primary text-white shadow-sm"
-                  : productsActive
-                  ? "bg-primary/10 text-primary"
-                  : "text-neutral-600 hover:bg-primary/10 hover:text-primary"
-              }`}
-            >
-              <Package size={18} />
-              <span className="flex-1">Produk</span>
-              <ChevronRight
-                size={14}
-                className={`transition-transform ${productsActive ? "rotate-90" : ""}`}
-              />
-            </Link>
-
-            {/* Submenu — tampil saat berada di bawah /admin/products */}
-            {productsActive && (
-              <div className="ml-7 mt-1 space-y-0.5 border-l-2 border-neutral-100 pl-3">
-                <Link
-                  to="/admin/products/low-stock"
-                  className={`flex items-center gap-2 px-3 py-2.5 rounded-xl transition-colors text-sm font-medium ${
-                    currentPath === "/admin/products/low-stock"
-                      ? "bg-amber-100 text-amber-800"
-                      : "text-neutral-500 hover:bg-amber-50 hover:text-amber-700"
-                  }`}
-                >
-                  <AlertTriangle size={14} />
-                  <span className="flex-1">Stok Rendah</span>
-                  {lowStockCount > 0 && (
-                    <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${
-                      currentPath === "/admin/products/low-stock"
-                        ? "bg-amber-200 text-amber-800"
-                        : "bg-amber-100 text-amber-700"
-                    }`}>
-                      {lowStockCount}
-                    </span>
-                  )}
-                </Link>
-              </div>
+                  ? "bg-white/20 text-white"
+                  : "bg-amber-100 text-amber-700"
+              }`}>
+                {lowStockCount}
+              </span>
             )}
-          </div>
+          </Link>
         </nav>
 
         {/* Logout */}
