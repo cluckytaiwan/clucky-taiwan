@@ -99,9 +99,15 @@ Deno.serve(async (req) => {
       return jsonResponse({ success: true, message: "No action needed" }, 200);
     }
 
+    const updatePayload: Record<string, unknown> = { status_pembayaran: newStatus };
+    // Catat waktu pembayaran tepat saat status menjadi lunas (untuk laporan omzet akurat)
+    if (newStatus === "lunas") {
+      updatePayload.dibayar_pada = new Date().toISOString();
+    }
+
     const { error: updateError } = await supabase
       .from("pesanan")
-      .update({ status_pembayaran: newStatus })
+      .update(updatePayload)
       .eq("id", order.id);
 
     if (updateError) throw updateError;

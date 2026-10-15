@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useCartStore } from "../store/cartStore";
 import { formatRupiah } from "../utils/formatCurrency";
 import { isValidPhoneNumber } from "../utils/validators";
-import { User, Phone, MapPin, QrCode, X, Clock, CreditCard } from "lucide-react";
+import { User, Phone, QrCode, X, Clock, CreditCard } from "lucide-react";
 import { supabase } from "../lib/supabaseClient";
 import { loadSnap } from "../utils/loadSnap";
 import { saveCustomerProfile, getCustomerProfile, saveOrderToHistory } from "../utils/storage";
@@ -10,7 +10,7 @@ import { saveCustomerProfile, getCustomerProfile, saveOrderToHistory } from "../
 const PENDING_KEY = "clucky_pending_payment";
 const LAST_ORDER_KEY = "clucky_last_order";
 
-const initialForm = { customer_name: "", customer_phone: "", customer_address: "", customer_notes: "" };
+const initialForm = { customer_name: "", customer_phone: "", customer_notes: "" };
 
 /* ─── Helper localStorage ───────────────────────────────────── */
 export function savePendingPayment({ snapToken, kode, hp, orderId, total }) {
@@ -110,9 +110,6 @@ export default function CheckoutForm({ onBack, onSuccess }) {
     if (!isValidPhoneNumber(form.customer_phone)) {
       e.customer_phone = "Format nomor HP tidak valid (contoh: 081234567890)";
     }
-    if (!form.customer_address.trim() || form.customer_address.trim().length < 10) {
-      e.customer_address = "Alamat terlalu singkat, mohon lengkapi";
-    }
     setErrors(e);
     return Object.keys(e).length === 0;
   }
@@ -182,10 +179,10 @@ export default function CheckoutForm({ onBack, onSuccess }) {
   async function handleSubmit(e) {
     e.preventDefault();
     setServerError("");
-    
+
     // Prevent double-submit
     if (loading) return;
-    
+
     if (!validate()) return;
     if (items.length === 0) { setServerError("Keranjang kosong"); return; }
 
@@ -228,8 +225,8 @@ export default function CheckoutForm({ onBack, onSuccess }) {
           body: JSON.stringify({
             customer_name: form.customer_name.trim(),
             customer_phone: form.customer_phone.trim(),
-            customer_address: form.customer_address.trim(),
-            customer_notes: form.customer_notes.trim(),
+            customer_address: "-",
+            customer_notes: form.customer_notes?.trim() || "",
             items: items.map((item) => ({
               product_id: item.product_id,
               qty: item.qty,
@@ -300,7 +297,7 @@ export default function CheckoutForm({ onBack, onSuccess }) {
           <div className="flex-1 space-y-6">
             <div>
               <h2 className="text-2xl font-bold font-display text-neutral-900 mb-1">Data Pelanggan</h2>
-              <p className="text-sm text-neutral-500 font-body">Isi data diri Anda untuk pengantaran pesanan.</p>
+              <p className="text-sm text-neutral-500 font-body">Isi data diri Anda</p>
             </div>
 
             <div className="space-y-5">
@@ -334,22 +331,6 @@ export default function CheckoutForm({ onBack, onSuccess }) {
                   placeholder="08xxxxxxxxxx"
                 />
                 {errors.customer_phone && <p className="text-xs text-danger mt-1.5">{errors.customer_phone}</p>}
-              </div>
-
-              {/* Alamat Lengkap */}
-              <div>
-                <label className="flex items-center gap-2 text-sm font-semibold text-neutral-800 mb-2">
-                  <MapPin size={16} className="text-neutral-500" />
-                  Alamat Lengkap
-                </label>
-                <textarea
-                  value={form.customer_address}
-                  onChange={(e) => setForm({ ...form, customer_address: e.target.value })}
-                  rows={3}
-                  className="w-full border border-neutral-200 rounded-xl px-4 py-3 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors text-sm resize-none"
-                  placeholder="Jalan, nomor rumah, RT/RW, kelurahan, kecamatan, kota"
-                />
-                {errors.customer_address && <p className="text-xs text-danger mt-1.5">{errors.customer_address}</p>}
               </div>
 
               {/* Catatan (Opsional) */}
@@ -392,10 +373,6 @@ export default function CheckoutForm({ onBack, onSuccess }) {
                 <div className="flex justify-between text-sm">
                   <span className="text-neutral-500 font-medium">Subtotal</span>
                   <span className="font-semibold text-neutral-900">{formatRupiah(getTotal())}</span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-neutral-500 font-medium">Ongkir</span>
-                  <span className="font-semibold text-success">Gratis</span>
                 </div>
               </div>
 

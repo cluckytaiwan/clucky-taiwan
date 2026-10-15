@@ -252,18 +252,18 @@ export default function ProductDetailPage() {
           <div className="bg-white rounded-3xl shadow-sm border border-neutral-200 overflow-hidden lg:flex">
 
             {/* GAMBAR */}
-            <div className="w-full lg:w-1/2 aspect-square lg:aspect-auto relative bg-neutral-100">
+            <div className="relative aspect-square w-full lg:w-1/2 bg-neutral-100">
               {product.image_url ? (
                 <img
-                  src={getOptimizedImageUrl(product.image_url, { width: 600 })}
+                  src={getOptimizedImageUrl(product.image_url, { width: 800 })}
                   alt={product.name}
-                  width={600}
-                  height={600}
+                  width={800}
+                  height={800}
                   onError={(e) => { e.currentTarget.style.display = "none"; }}
-                  className="w-full h-full object-cover"
+                  className="absolute inset-0 h-full w-full object-cover"
                 />
               ) : (
-                <div className="flex w-full h-full min-h-[300px] items-center justify-center text-neutral-400 font-medium">
+                <div className="flex h-full w-full min-h-[300px] items-center justify-center text-neutral-400 font-medium">
                   Belum Ada Gambar
                 </div>
               )}

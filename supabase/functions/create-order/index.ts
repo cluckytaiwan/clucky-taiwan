@@ -15,7 +15,7 @@ interface CartItem {
 interface CheckoutPayload {
   customer_name: string;
   customer_phone: string;
-  customer_address: string;
+  customer_address?: string;
   customer_notes?: string;
   items: CartItem[];
 }
@@ -49,7 +49,6 @@ Deno.serve(async (req) => {
     if (
       !payload.customer_name?.trim() ||
       !payload.customer_phone?.trim() ||
-      !payload.customer_address?.trim() ||
       !Array.isArray(payload.items) ||
       payload.items.length === 0
     ) {
@@ -213,7 +212,7 @@ Deno.serve(async (req) => {
       .insert({
         nama_pelanggan: payload.customer_name.trim(),
         no_hp_pelanggan: payload.customer_phone.trim(),
-        alamat_pelanggan: payload.customer_address.trim(),
+        alamat_pelanggan: payload.customer_address?.trim() || "-",
         catatan: payload.customer_notes?.trim() || null,
         total_harga: totalAmount,
         status_pembayaran: "menunggu_pembayaran",

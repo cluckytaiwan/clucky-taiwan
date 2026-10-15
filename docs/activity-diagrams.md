@@ -1,483 +1,1154 @@
 # Activity Diagram Aplikasi Clucky Taiwan
 
-Dokumen ini berisi beberapa bagian (bagian) activity diagram untuk aplikasi pemesanan
-makanan **Clucky Taiwan** (Ayam Goreng Taiwan) yang dibangun dengan React, Supabase,
-dan Midtrans sebagai payment gateway.
+Dokumen ini berisi **11 activity diagram** untuk sistem pemesanan makanan
+**Clucky Taiwan** (React + Supabase + Midtrans). Setiap diagram menggunakan
+format **PlantUML** dengan **swimlane** untuk menggambarkan peran masing-masing
+aktor secara jelas.
 
-Setiap bagian berdiri sendiri dan bisa langsung disalin ke AI pembuat diagram.
-Setiap bagian dilengkapi dengan:
-1. Deskripsi alur dengan bahasa yang mudah dipahami (cocok untuk laporan tugas akhir).
-2. Bagan alur langkah demi langkah beserta titik keputusan.
-3. Kode Mermaid siap pakai untuk membuat diagramnya.
+**Cara render diagram:**
+Salin kode di dalam blok ` ```plantuml ` ke salah satu tools berikut:
+- [plantuml.com/plantuml/uml/](https://www.plantuml.com/plantuml/uml/)
+- Ekstensi **PlantUML** di VS Code (Jebbs)
+- Plugin PlantUML di IntelliJ / WebStorm
 
-Daftar bagian:
-- Bagian 1: Pemesanan dan Pembayaran (Pelanggan)
-- Bagian 2: Cek Status Pesanan (Pelanggan)
-- Bagian 3: Login Admin
-- Bagian 4: Kelola Kategori (Admin)
-- Bagian 5: Kelola Produk dan Varian (Admin)
-- Bagian 6: Kelola Pesanan (Admin)
+**Daftar Diagram:**
+1. Pemesanan dan Pembayaran (Pelanggan)
+2. Cek Status Pesanan (Pelanggan)
+3. Login Admin
+4. Kelola Kategori (Admin)
+5. Kelola Produk dan Varian (Admin)
+6. Kelola Pesanan (Admin)
+7. Rekomendasi Budget (Pelanggan)
+8. Melihat Detail & Memilih Varian Produk (Pelanggan)
+9. Mengelola Keranjang Belanja (Pelanggan)
+10. Pemrosesan Webhook Pembayaran (Sistem)
+11. Melihat Katalog & Filter Kategori (Pelanggan)
 
 ---
-
 ## Bagian 1: Activity Diagram Pemesanan dan Pembayaran (Pelanggan)
 
-**Aktor:** Pelanggan, Sistem (Aplikasi, Supabase, Midtrans)
+**Aktor:** Pelanggan | Sistem | Server (Edge Function) | Midtrans
 
-**Tujuan:** Menggambarkan alur pelanggan memesan makanan mulai dari melihat menu,
-memilih varian, menambah ke keranjang, mengisi data, hingga melakukan pembayaran
-dan pesanan tercatat di sistem.
+**Tujuan:** Menggambarkan alur lengkap pemesanan — dari memilih produk & varian,
+mengisi checkout, proses server-side (validasi stok atomik, pesanan, Snap Token),
+pembayaran via QRIS, hingga konfirmasi webhook dari Midtrans.
 
 **Deskripsi Alur:**
 
-Pelanggan membuka aplikasi dan melihat katalog menu yang tersedia. Pelanggan
-memilih salah satu produk lalu sistem menampilkan detail produk beserta pilihan
-varian (misalnya ukuran dan tingkat kepedasan). Pelanggan memilih varian, mengatur
-jumlah, lalu menekan tombol "Tambah ke Keranjang". Jika semua varian wajib sudah
-dipilih dan stok tersedia, sistem memasukkan produk ke dalam keranjang. Selanjutnya
-pelanggan menekan "Bayar Sekarang" dan mengisi data diri (nama, nomor HP, alamat,
-dan catatan opsional). Sistem memvalidasi data; jika tidak valid, sistem menampilkan
-peringatan dan meminta pelanggan memperbaiki. Jika valid, sistem mengecek stok
-terbaru dan memanggil fungsi server untuk membuat pesanan. Server memvalidasi kembali,
-mengurangi stok, menyimpan data pesanan, lalu meminta token pembayaran ke Midtrans.
-Pelanggan membayar melalui popup Midtrans Snap. Midtrans mengirim notifikasi ke
-sistem, sistem memverifikasi, lalu memperbarui status pembayaran. Jika pembayaran
-sukses, keranjang dikosongkan, riwayat disimpan, dan sistem menampilkan halaman
-sukses beserta kode pesanan.
+Pelanggan membuka katalog, memilih produk, dan memilih varian (ukuran/rasa) yang
+wajib dipilih jika tersedia. Harga berubah dinamis sesuai varian. Item disimpan ke
+keranjang (Zustand + localStorage). Saat checkout, sistem memvalidasi form dan
+melakukan pre-flight check stok. Jika lolos, Edge Function `create-order` dipanggil:
+memvalidasi ulang, mengurangi stok atomik via RPC (dengan rollback jika gagal),
+menyimpan pesanan, meminta Snap Token ke Midtrans, dan mengembalikan token.
+Keranjang dikosongkan setelah pesanan masuk database. Pelanggan membayar via Snap
+QRIS. Midtrans mengirim webhook; server memverifikasi signature, idempotency, dan
+nominal — lalu memperbarui status pembayaran. Stok dikembalikan jika gagal/batal.
 
-**Bagan Alur:**
+**Kode Diagram (PlantUML):**
 
-1. Pelanggan membuka halaman utama aplikasi.
-2. Sistem menampilkan katalog menu beserta filter kategori.
-3. Pelanggan memilih produk.
-4. Sistem menampilkan detail produk dan pilihan varian.
-5. Pelanggan memilih varian dan menentukan jumlah.
-6. Keputusan: Semua varian wajib sudah dipilih dan stok tersedia?
-   - Tidak -> kembali ke langkah 5.
-   - Ya -> lanjut ke langkah 7.
-7. Pelanggan menekan tombol "Tambah ke Keranjang".
-8. Sistem menyimpan item ke dalam keranjang.
-9. Pelanggan menekan "Bayar Sekarang" (masuk halaman checkout).
-10. Sistem menampilkan form data pelanggan dan ringkasan belanja.
-11. Pelanggan mengisi nama, nomor HP, alamat, dan catatan (opsional).
-12. Sistem memvalidasi form.
-13. Keputusan: Data valid (nama minimal 3 karakter, format HP benar, alamat lengkap)?
-    - Tidak -> sistem menampilkan pesan error, kembali ke langkah 11.
-    - Ya -> lanjut ke langkah 14.
-14. Sistem memeriksa stok terbaru setiap produk di database.
-15. Keputusan: Stok cukup dan produk masih aktif?
-    - Tidak -> sistem menampilkan pesan gagal, checkout dibatalkan.
-    - Ya -> lanjut ke langkah 16.
-16. Sistem memanggil fungsi server `create-order`.
-17. Server memvalidasi ulang data dan stok.
-18. Server mengurangi stok produk (reservasi sementara).
-19. Server menyimpan data pesanan dan detail pesanan ke database.
-20. Server meminta Snap Token ke Midtrans.
-21. Keputusan: Snap Token berhasil didapat?
-    - Tidak -> server mengembalikan stok dan membatalkan pesanan, sistem menampilkan error.
-    - Ya -> lanjut ke langkah 22.
-22. Sistem menampilkan popup pembayaran Midtrans Snap (QRIS).
-23. Pelanggan melakukan pembayaran.
-24. Midtrans mengirim notifikasi webhook ke sistem.
-25. Sistem memverifikasi tanda tangan (signature) webhook.
-26. Keputusan: Signature valid?
-    - Tidak -> sistem menolak notifikasi, status tidak berubah.
-    - Ya -> lanjut ke langkah 27.
-27. Sistem memeriksa jumlah pembayaran sesuai tagihan.
-28. Keputusan: Jumlah cocok dan status pesanan belum final?
-    - Tidak -> notifikasi diabaikan.
-    - Ya -> lanjut ke langkah 29.
-29. Sistem memperbarui status pembayaran menjadi "Lunas".
-30. Keputusan: Apakah pembayaran gagal/batal/kadaluarsa?
-    - Ya -> sistem mengembalikan stok produk.
-    - Tidak (lunas) -> lanjut ke langkah 31.
-31. Sistem mengirim pembaruan realtime ke aplikasi.
-32. Aplikasi mengosongkan keranjang dan menyimpan riwayat pesanan.
-33. Sistem menampilkan halaman sukses berisi kode pesanan.
-34. Alur selesai.
+```plantuml
+@startuml
+!theme plain
+skinparam defaultFontName Arial
+skinparam defaultFontSize 11
+skinparam backgroundColor #FFFFFF
+skinparam activityBackgroundColor #FFF8F0
+skinparam activityBorderColor #C0392B
+skinparam activityDiamondBackgroundColor #FEF9E7
+skinparam activityDiamondBorderColor #E67E22
+skinparam swimlaneBorderColor #AAAAAA
+skinparam ArrowColor #555555
 
-**Kode Diagram (Mermaid):**
+|#LightYellow|Pelanggan|
+start
+:Buka halaman utama;
 
-```mermaid
-flowchart TD
-    A([Mulai]) --> B[Buka halaman utama]
-    B --> C[Sistem menampilkan katalog menu]
-    C --> D[Pelanggan memilih produk]
-    D --> E[Sistem menampilkan detail produk & varian]
-    E --> F[Pelanggan memilih varian & jumlah]
-    F --> G{Semua varian wajib terpilih & stok tersedia?}
-    G -- Tidak --> F
-    G -- Ya --> H[Tambah ke Keranjang]
-    H --> I[Sistem menyimpan item ke keranjang]
-    I --> J[Pelanggan klik Bayar Sekarang]
-    J --> K[Sistem menampilkan form data pelanggan]
-    K --> L[Pelanggan mengisi data diri]
-    L --> M{Sistem memvalidasi data?}
-    M -- Tidak valid --> N[Tampilkan pesan error] --> L
-    M -- Valid --> O[Cek stok terbaru]
-    O --> P{Stok cukup & produk aktif?}
-    P -- Tidak --> Q[Tampilkan pesan gagal checkout]
-    P -- Ya --> R[Panggil fungsi create-order]
-    R --> S[Server validasi ulang data & stok]
-    S --> T[Server mengurangi stok]
-    T --> U[Server simpan pesanan ke database]
-    U --> V[Server minta Snap Token ke Midtrans]
-    V --> W{Snap Token berhasil?}
-    W -- Tidak --> X[Rollback stok, batalkan pesanan]
-    W -- Ya --> Y[Sistem tampilkan popup pembayaran Snap]
-    Y --> Z[Pelanggan membayar via QRIS]
-    Z --> AA[Midtrans kirim notifikasi webhook]
-    AA --> AB[Sistem verifikasi signature]
-    AB --> AC{Signature valid?}
-    AC -- Tidak --> AD[Tolak notifikasi]
-    AC -- Ya --> AE{Cek jumlah & status final?}
-    AE -- Tidak sesuai --> AD
-    AE -- Sesuai --> AF[Update status menjadi Lunas]
-    AF --> AG{Status gagal/batal/kadaluarsa?}
-    AG -- Ya --> AH[Kembalikan stok]
-    AG -- Tidak --> AI[Kirim update realtime]
-    AH --> AI
-    AI --> AJ[Kosongkan keranjang & simpan riwayat]
-    AJ --> AK[Tampilkan halaman sukses + kode pesanan]
-    AK --> ZA([Selesai])
-    AD --> ZA
-    Q --> ZA
-    X --> ZA
+|#LightCyan|Sistem|
+:Tampilkan katalog produk;
+
+|#LightYellow|Pelanggan|
+:Pilih produk dari katalog;
+
+|#LightCyan|Sistem|
+:Fetch detail produk & opsi_varian\n(paralel dari Supabase);
+if (Produk aktif & stok > 0?) then (Ya)
+else (Tidak)
+  :Tampilkan pesan error / overlay Stok Habis;
+  stop
+endif
+:Tampilkan detail, varian, harga;
+
+|#LightYellow|Pelanggan|
+:Pilih varian per tipe (ukuran / rasa);
+note right: Wajib pilih semua tipe\nyang tersedia
+
+|#LightCyan|Sistem|
+:Hitung harga final = harga dasar\n+ sum(harga_tambahan varian);
+if (Semua varian terpilih?) then (Ya)
+else (Tidak)
+  :Disable tombol, tampilkan hint;
+  |#LightYellow|Pelanggan|
+  :Perbaiki pilihan varian;
+  |#LightCyan|Sistem|
+endif
+
+|#LightYellow|Pelanggan|
+:Atur jumlah (qty), klik\n"Tambah ke Keranjang";
+
+|#LightCyan|Sistem|
+:Simpan item ke keranjang\n(Zustand + localStorage);
+
+|#LightYellow|Pelanggan|
+:Buka keranjang, klik "Checkout";
+
+|#LightCyan|Sistem|
+:Tampilkan form data pelanggan\n& ringkasan belanja;
+
+|#LightYellow|Pelanggan|
+:Isi nama, nomor HP, alamat,\ncatatan (opsional);
+:Klik "Bayar Sekarang";
+
+|#LightCyan|Sistem|
+if (Validasi form: nama, HP format,\nalamat min. 10 karakter?) then (Valid)
+else (Tidak Valid)
+  :Tampilkan error per field;
+  |#LightYellow|Pelanggan|
+  :Perbaiki data;
+  |#LightCyan|Sistem|
+endif
+:Pre-flight: cek stok terbaru ke Supabase;
+if (Stok cukup & produk aktif?) then (Ya)
+else (Tidak)
+  :Tampilkan error stok, hentikan;
+  stop
+endif
+:Panggil Edge Function create-order;
+
+|#LightGreen|Server (create-order)|
+:Validasi payload: format HP,\nproduk valid, varian cocok, qty;
+if (Payload valid?) then (Ya)
+else (Tidak)
+  :Return VALIDATION_ERROR;
+  |#LightCyan|Sistem|
+  :Tampilkan error;
+  stop
+endif
+:Kurangi stok per produk\nvia RPC kurangi_stok (atomik);
+if (Stok cukup semua item?) then (Ya)
+else (Tidak — race condition)
+  :Rollback stok yang sudah dikurangi;
+  :Return INSUFFICIENT_STOCK;
+  |#LightCyan|Sistem|
+  :Tampilkan error;
+  stop
+endif
+:INSERT pesanan ke tabel pesanan;
+:INSERT detail_pesanan\n(snapshot varian dalam JSON);
+:Request Snap Token ke Midtrans API;
+if (Snap Token berhasil?) then (Ya)
+else (Tidak)
+  :Rollback: hapus pesanan,\nkembalikan stok;
+  :Return PAYMENT_GATEWAY_ERROR;
+  |#LightCyan|Sistem|
+  :Tampilkan error;
+  stop
+endif
+:UPDATE snap_token ke pesanan;
+:Return: snap_token, kode_pesanan;
+
+|#LightCyan|Sistem|
+:Kosongkan keranjang belanja;
+:Muat Midtrans Snap,\nbuka popup pembayaran QRIS;
+
+|#LightYellow|Pelanggan|
+if (Selesaikan pembayaran di Snap?) then (Ya)
+else (Tutup popup)
+  |#LightCyan|Sistem|
+  :Simpan snap_token ke localStorage;
+  :Tampilkan modal pilihan;
+  if (Pilihan pelanggan?) then (Bayar Sekarang)
+    :Buka kembali popup Snap;
+    |#LightYellow|Pelanggan|
+  else (Bayar Nanti)
+    :Pesanan tersimpan pending,\ntoken bisa dipakai dari Cek Pesanan;
+    stop
+  endif
+endif
+
+|#Pink|Midtrans|
+:Kirim notifikasi webhook POST\nke midtrans-webhook;
+
+|#LightGreen|Server (midtrans-webhook)|
+:Verifikasi SHA-512 signature;
+if (Signature valid?) then (Ya)
+else (Tidak)
+  :Tolak, return HTTP 200;
+  stop
+endif
+:Cari pesanan by midtrans_order_id;
+if (Pesanan ditemukan?) then (Ya)
+else (Tidak)
+  :Return HTTP 200;
+  stop
+endif
+if (Status pesanan sudah final?\n(idempotency)) then (Tidak)
+else (Ya — sudah final)
+  :Abaikan, return 200;
+  stop
+endif
+:Validasi nominal pembayaran\n(toleransi Rp 1);
+if (Nominal cocok?) then (Ya)
+else (Tidak)
+  :Tolak, return 200;
+  stop
+endif
+:Mapping status Midtrans → status lokal;
+if (Ada status yang perlu diperbarui?) then (Ya)
+else (Tidak — status pending)
+  stop
+endif
+:UPDATE status_pembayaran di pesanan;
+if (Status = kadaluarsa/dibatalkan/ditolak?) then (Ya)
+  :Kembalikan stok setiap item\nvia RPC tambah_stok;
+else (Tidak — lunas)
+  note right: Stok sudah permanen\ndari reservasi create-order
+endif
+
+|#LightCyan|Sistem|
+:Realtime UPDATE / onSuccess\ncallback dipanggil;
+:Simpan riwayat ke localStorage;
+:Tampilkan halaman sukses\nbeserta kode pesanan (CTX-XXXXX);
+stop
+@enduml
 ```
 
 ---
 
 ## Bagian 2: Activity Diagram Cek Status Pesanan (Pelanggan)
 
-**Aktor:** Pelanggan, Sistem
+**Aktor:** Pelanggan | Sistem | Server (Edge Function)
 
-**Tujuan:** Menggambarkan alur pelanggan memeriksa status pesanannya menggunakan
-kode pesanan dan nomor HP, termasuk melanjutkan pembayaran jika masih menunggu.
+**Tujuan:** Menggambarkan alur pelanggan memeriksa status pesanan menggunakan
+dua identitas (kode pesanan + nomor HP) sebagai mekanisme anti-enumeration,
+termasuk kemungkinan melanjutkan pembayaran yang masih pending.
 
-**Deskripsi Alur:**
+**Kode Diagram (PlantUML):**
 
-Pelanggan membuka halaman "Pesanan Saya" lalu memasukkan kode pesanan dan nomor HP.
-Sistem mengirim permintaan ke fungsi server untuk mencari pesanan di database.
-Jika pesanan tidak ditemukan atau nomor HP tidak cocok, sistem menampilkan pesan
-tidak ditemukan. Jika ditemukan, sistem menampilkan detail pesanan beserta timeline
-status (Menunggu Pembayaran, Diproses, Siap Diambil, Selesai). Jika status masih
-"Menunggu Pembayaran" dan token masih tersedia, sistem menampilkan tombol
-"Lanjutkan Pembayaran". Pelanggan dapat membuka popup pembayaran dan menyelesaikan
-pembayaran, lalu sistem memperbarui status dan menampilkan timeline terbaru.
+```plantuml
+@startuml
+!theme plain
+skinparam defaultFontName Arial
+skinparam defaultFontSize 11
+skinparam backgroundColor #FFFFFF
+skinparam activityBackgroundColor #FFF8F0
+skinparam activityBorderColor #C0392B
+skinparam activityDiamondBackgroundColor #FEF9E7
+skinparam activityDiamondBorderColor #E67E22
+skinparam swimlaneBorderColor #AAAAAA
+skinparam ArrowColor #555555
 
-**Bagan Alur:**
+|#LightYellow|Pelanggan|
+start
+:Buka halaman /cek-pesanan;
 
-1. Pelanggan membuka halaman "Pesanan Saya".
-2. Sistem menampilkan form kode pesanan dan nomor HP.
-3. Pelanggan memasukkan kode pesanan dan nomor HP.
-4. Keputusan: Kedua kolom terisi?
-   - Tidak -> sistem menampilkan peringatan, kembali ke langkah 3.
-   - Ya -> lanjut ke langkah 5.
-5. Pelanggan menekan tombol "Cek".
-6. Sistem memanggil fungsi server `check-order-status`.
-7. Sistem mencari pesanan berdasarkan kode dan nomor HP.
-8. Keputusan: Pesanan ditemukan dan nomor HP cocok?
-   - Tidak -> sistem menampilkan "Pesanan tidak ditemukan".
-   - Ya -> lanjut ke langkah 9.
-9. Sistem menampilkan detail pesanan dan timeline status.
-10. Keputusan: Status masih "Menunggu Pembayaran" dan token tersedia?
-    - Tidak -> alur selesai (pelanggan hanya melihat status).
-    - Ya -> lanjut ke langkah 11.
-11. Sistem menampilkan tombol "Lanjutkan Pembayaran".
-12. Pelanggan menekan tombol tersebut.
-13. Sistem membuka popup pembayaran Midtrans Snap.
-14. Pelanggan menyelesaikan pembayaran.
-15. Sistem memperbarui status dan menampilkan timeline terbaru.
-16. Alur selesai.
+|#LightCyan|Sistem|
+:Baca riwayat pesanan\ndari localStorage;
+if (Ada riwayat pesanan?) then (Ya)
+  :Tampilkan kartu-kartu\nriwayat pesanan;
+  |#LightYellow|Pelanggan|
+  if (Klik kartu riwayat?) then (Ya)
+    :Form terisi otomatis\n(kode pesanan + nomor HP);
+    |#LightCyan|Sistem|
+  else (Tidak — isi manual)
+    |#LightYellow|Pelanggan|
+    :Isi kode pesanan & nomor HP secara manual;
+    |#LightCyan|Sistem|
+  endif
+else (Tidak)
+  :Tampilkan "Belum ada riwayat pesanan";
+  |#LightYellow|Pelanggan|
+  :Isi kode pesanan & nomor HP;
+  |#LightCyan|Sistem|
+endif
+if (Kedua kolom terisi?) then (Ya)
+else (Tidak)
+  :Tampilkan peringatan;
+  |#LightYellow|Pelanggan|
+  :Lengkapi isian;
+  |#LightCyan|Sistem|
+endif
+:Panggil Edge Function\ncheck-order-status;
 
-**Kode Diagram (Mermaid):**
+|#LightGreen|Server (check-order-status)|
+:Cari pesanan:\nkode_pesanan + no_hp_pelanggan\nwajib cocok keduanya;
+if (Pesanan ditemukan & HP cocok?) then (Ya)
+else (Tidak)
+  :Return ORDER_NOT_FOUND;
+  |#LightCyan|Sistem|
+  :Tampilkan "Pesanan tidak ditemukan\natau nomor telepon tidak cocok";
+  stop
+endif
+:Ambil detail_pesanan (item-item);
+if (Status = menunggu_pembayaran?) then (Ya)
+  :Sertakan snap_token\ndalam response;
+else (Tidak)
+  :snap_token = null;
+endif
+:Return data pesanan + items;
 
-```mermaid
-flowchart TD
-    A([Mulai]) --> B[Buka halaman Pesanan Saya]
-    B --> C[Sistem tampilkan form kode & no HP]
-    C --> D[Pelanggan isi kode pesanan & no HP]
-    D --> E{Kedua kolom terisi?}
-    E -- Tidak --> F[Tampilkan peringatan] --> D
-    E -- Ya --> G[Klik tombol Cek]
-    G --> H[Panggil fungsi check-order-status]
-    H --> I[Cari pesanan di database]
-    I --> J{Pesanan ditemukan & HP cocok?}
-    J -- Tidak --> K[Tampilkan pesan tidak ditemukan]
-    J -- Ya --> L[Tampilkan detail pesanan & timeline]
-    L --> M{Status menunggu pembayaran & token tersedia?}
-    M -- Tidak --> N([Selesai])
-    M -- Ya --> O[Tampilkan tombol Lanjutkan Pembayaran]
-    O --> P[Klik Lanjutkan Pembayaran]
-    P --> Q[Buka popup pembayaran Snap]
-    Q --> R[Pelanggan selesaikan pembayaran]
-    R --> S[Update status & tampilkan timeline terbaru]
-    S --> N
-    K --> N
+|#LightCyan|Sistem|
+:Tampilkan detail pesanan\n& timeline status;
+note right
+  Timeline: Menunggu Pembayaran
+  → Diproses → Siap Diambil → Selesai
+  Status gagal ditandai ikon X
+end note
+if (Status menunggu_pembayaran\n& snap_token tersedia?) then (Ya)
+  :Tampilkan tombol\n"Lanjutkan Pembayaran";
+  |#LightYellow|Pelanggan|
+  if (Klik Lanjutkan Pembayaran?) then (Ya)
+    |#LightCyan|Sistem|
+    :Buka Midtrans Snap\ndengan token yang ada;
+    |#LightYellow|Pelanggan|
+    :Selesaikan pembayaran;
+    |#LightCyan|Sistem|
+    :onSuccess: tampilkan\nhalaman sukses + kode pesanan;
+  else (Tidak)
+  endif
+else (Tidak)
+  note right: Jika token expired,\ntampilkan pesan hubungi admin
+endif
+stop
+@enduml
 ```
 
 ---
 
 ## Bagian 3: Activity Diagram Login Admin
 
-**Aktor:** Admin, Sistem (Supabase Auth)
+**Aktor:** Admin | Sistem | Supabase Auth
 
-**Tujuan:** Menggambarkan proses autentikasi admin sebelum mengelola data aplikasi,
-dimulai dari memasukkan kredensial hingga masuk ke halaman dashboard.
+**Tujuan:** Menggambarkan proses autentikasi admin, termasuk verifikasi whitelist
+tabel `admin` setelah login berhasil. Admin tidak bisa mengakses dashboard jika
+`user_id`-nya tidak terdaftar di tabel `admin`, meskipun password-nya benar.
 
-**Deskripsi Alur:**
+**Kode Diagram (PlantUML):**
 
-Admin membuka halaman login dan memasukkan email serta password. Sistem memverifikasi
-kredensial melalui Supabase Auth. Jika kredensial salah, sistem menampilkan pesan
-error dan meminta admin mengulang. Jika benar, sistem memeriksa apakah akun tersebut
-terdaftar dalam tabel admin (whitelist). Jika tidak terdaftar, akses ditolak dan
-admin dikembalikan ke halaman login. Jika terdaftar, sistem membuat sesi dan
-mengarahkan admin ke halaman dashboard.
+```plantuml
+@startuml
+!theme plain
+skinparam defaultFontName Arial
+skinparam defaultFontSize 11
+skinparam backgroundColor #FFFFFF
+skinparam activityBackgroundColor #FFF8F0
+skinparam activityBorderColor #C0392B
+skinparam activityDiamondBackgroundColor #FEF9E7
+skinparam activityDiamondBorderColor #E67E22
+skinparam swimlaneBorderColor #AAAAAA
+skinparam ArrowColor #555555
 
-**Bagan Alur:**
+|#LightBlue|Admin|
+start
+:Buka halaman /admin/login;
 
-1. Admin membuka halaman login admin.
-2. Sistem menampilkan form login.
-3. Admin memasukkan email dan password.
-4. Admin menekan tombol "Masuk".
-5. Sistem memverifikasi kredensial ke Supabase Auth.
-6. Keputusan: Kredensial valid?
-   - Tidak -> sistem menampilkan "Email atau password salah", kembali ke langkah 3.
-   - Ya -> lanjut ke langkah 7.
-7. Sistem memeriksa apakah user terdaftar di tabel admin.
-8. Keputusan: Terdaftar sebagai admin?
-   - Tidak -> sistem menolak akses dan mengarahkan kembali ke login.
-   - Ya -> lanjut ke langkah 9.
-9. Sistem menyimpan sesi admin.
-10. Sistem mengarahkan ke halaman dashboard.
-11. Sistem menampilkan dasbor pesanan.
-12. Alur selesai.
+|#LightCyan|Sistem|
+:Tampilkan form login;
 
-**Kode Diagram (Mermaid):**
+|#LightBlue|Admin|
+:Isi email & password;
+:Klik tombol "Masuk";
 
-```mermaid
-flowchart TD
-    A([Mulai]) --> B[Buka halaman login admin]
-    B --> C[Sistem tampilkan form login]
-    C --> D[Admin isi email & password]
-    D --> E[Klik tombol Masuk]
-    E --> F[Verifikasi kredensial ke Supabase Auth]
-    F --> G{Kredensial valid?}
-    G -- Tidak --> H[Tampilkan pesan error] --> D
-    G -- Ya --> I[Cek daftar admin whitelist]
-    I --> J{Terdaftar sebagai admin?}
-    J -- Tidak --> K[Tolak akses, kembali ke login] --> A
-    J -- Ya --> L[Simpan sesi admin]
-    L --> M[Arahkan ke halaman dashboard]
-    M --> N[Sistem tampilkan dasbor pesanan]
-    N --> O([Selesai])
+|#LightCyan|Sistem|
+:Panggil supabase.auth\n.signInWithPassword();
+
+|#LightGreen|Supabase Auth|
+if (Kredensial valid?) then (Ya)
+  :Buat session, trigger\nonAuthStateChange;
+else (Tidak)
+  :Return error AuthApiError;
+  |#LightCyan|Sistem|
+  :Tampilkan "Email atau password salah";
+  |#LightBlue|Admin|
+  :Perbaiki kredensial;
+  |#LightCyan|Sistem|
+endif
+
+|#LightCyan|Sistem|
+note right: onAuthStateChange dipanggil\noleh AdminAuthContext
+:SELECT dari tabel admin\nberdasarkan user_id (whitelist check);
+
+|#LightGreen|Supabase Auth|
+if (user_id ada di tabel admin?) then (Ya)
+else (Tidak)
+  :Return: data null;
+  |#LightCyan|Sistem|
+  :isAdmin = false;
+  :ProtectedRoute blokir akses,\ntampilkan redirect ke login;
+  stop
+endif
+:Return: record admin;
+
+|#LightCyan|Sistem|
+:isAdmin = true;
+:Session tersimpan otomatis\noleh Supabase;
+:Arahkan ke /admin/dashboard;
+:Tampilkan dasbor pesanan;
+
+|#LightBlue|Admin|
+:Mulai mengelola aplikasi;
+stop
+@enduml
 ```
 
 ---
 
 ## Bagian 4: Activity Diagram Kelola Kategori (Admin)
 
-**Aktor:** Admin, Sistem
+**Aktor:** Admin | Sistem | Database
 
-**Tujuan:** Menggambarkan alur admin menambah, mengubah, dan menghapus kategori
-menu yang digunakan untuk mengelompokkan produk.
+**Tujuan:** Menggambarkan alur admin membuat, memperbarui, dan menghapus kategori
+menu. Produk yang menggunakan kategori yang dihapus akan otomatis menjadi tanpa
+kategori (ON DELETE SET NULL).
 
-**Deskripsi Alur:**
+**Kode Diagram (PlantUML):**
 
-Admin membuka halaman "Kelola Kategori". Sistem menampilkan daftar kategori beserta
-jumlah produk dalam setiap kategori. Untuk menambah atau mengubah kategori, admin
-mengisi nama kategori pada form. Sistem memvalidasi nama wajib diisi dan tidak
-boleh duplikat dengan kategori lain, lalu menyimpan ke database dan memperbarui
-daftar. Untuk menghapus, admin menekan tombol hapus, sistem menampilkan dialog
-konfirmasi, dan jika disetujui, sistem menghapus kategori dari database lalu
-memperbarui daftar.
+```plantuml
+@startuml
+!theme plain
+skinparam defaultFontName Arial
+skinparam defaultFontSize 11
+skinparam backgroundColor #FFFFFF
+skinparam activityBackgroundColor #FFF8F0
+skinparam activityBorderColor #C0392B
+skinparam activityDiamondBackgroundColor #FEF9E7
+skinparam activityDiamondBorderColor #E67E22
+skinparam swimlaneBorderColor #AAAAAA
+skinparam ArrowColor #555555
 
-**Bagan Alur:**
+|#LightBlue|Admin|
+start
+:Buka halaman Kelola Kategori;
 
-1. Admin membuka halaman "Kelola Kategori".
-2. Sistem menampilkan daftar kategori dan jumlah produknya.
-3. Admin memilih aksi: Tambah, Edit, atau Hapus.
-4. Keputusan: Aksi yang dipilih?
-   - Tambah -> lanjut ke langkah 5.
-   - Edit -> lanjut ke langkah 5.
-   - Hapus -> lanjut ke langkah 10.
-5. Sistem menampilkan form nama kategori.
-6. Admin mengisi nama kategori.
-7. Sistem memvalidasi nama (wajib diisi, tidak duplikat).
-8. Keputusan: Data valid?
-   - Tidak -> sistem menampilkan pesan error, kembali ke langkah 6.
-   - Ya -> lanjut ke langkah 9.
-9. Sistem menyimpan data kategori ke database (insert atau update).
-10. (Untuk hapus) Sistem menampilkan dialog konfirmasi.
-11. Keputusan: Admin menyetujui penghapusan?
-    - Tidak -> kembali ke daftar.
-    - Ya -> lanjut ke langkah 12.
-12. Sistem menghapus kategori dari database.
-13. Sistem memperbarui dan menampilkan daftar kategori.
-14. Alur selesai.
+|#LightGreen|Database|
+:SELECT semua kategori;
 
-**Kode Diagram (Mermaid):**
+|#LightCyan|Sistem|
+:Tampilkan daftar kategori;
 
-```mermaid
-flowchart TD
-    A([Mulai]) --> B[Buka halaman Kelola Kategori]
-    B --> C[Sistem tampilkan daftar kategori]
-    C --> D{Admin memilih aksi}
-    D -- Tambah --> E[Sistem tampilkan form nama kategori]
-    D -- Edit --> E
-    D -- Hapus --> F[Tampilkan dialog konfirmasi]
-    E --> G[Admin isi nama kategori]
-    G --> H{Validasi: wajib diisi & tidak duplikat?}
-    H -- Tidak --> I[Tampilkan pesan error] --> G
-    H -- Ya --> J[Simpan kategori ke database]
-    J --> K[Perbarui daftar kategori]
-    F --> L{Admin setuju hapus?}
-    L -- Tidak --> K
-    L -- Ya --> M[Hapus kategori dari database]
-    M --> K
-    K --> N([Selesai])
+|#LightBlue|Admin|
+if (Pilih aksi?) then (Tambah)
+  :Klik "+ Tambah Kategori";
+  |#LightCyan|Sistem|
+  :Tampilkan form input kosong;
+  |#LightBlue|Admin|
+  :Isi nama kategori;
+  |#LightCyan|Sistem|
+  if (Nama diisi & tidak duplikat?) then (Ya)
+  else (Tidak)
+    :Tampilkan pesan error;
+    |#LightBlue|Admin|
+    :Perbaiki nama;
+    |#LightCyan|Sistem|
+  endif
+  |#LightGreen|Database|
+  :INSERT ke tabel kategori;
+else if (Pilih aksi?) then (Edit)
+  :Klik ikon edit pada baris kategori;
+  |#LightCyan|Sistem|
+  :Tampilkan form berisi nama existing;
+  |#LightBlue|Admin|
+  :Ubah nama kategori;
+  |#LightCyan|Sistem|
+  if (Nama diisi & tidak duplikat?) then (Ya)
+  else (Tidak)
+    :Tampilkan pesan error;
+    |#LightBlue|Admin|
+    :Perbaiki nama;
+    |#LightCyan|Sistem|
+  endif
+  |#LightGreen|Database|
+  :UPDATE nama_kategori;
+else (Hapus)
+  :Klik ikon hapus pada baris kategori;
+  |#LightCyan|Sistem|
+  :Tampilkan dialog konfirmasi\n(dengan peringatan SET NULL);
+  |#LightBlue|Admin|
+  if (Konfirmasi hapus?) then (Ya)
+    |#LightGreen|Database|
+    :DELETE kategori;
+    note right: Produk terkait:\nkategori_id = NULL\n(ON DELETE SET NULL)
+  else (Batal)
+    |#LightCyan|Sistem|
+    :Tutup dialog;
+    stop
+  endif
+endif
+
+|#LightGreen|Database|
+:Return data terbaru;
+
+|#LightCyan|Sistem|
+:Perbarui daftar kategori;
+
+|#LightBlue|Admin|
+:Lihat hasil perubahan;
+stop
+@enduml
 ```
 
 ---
 
 ## Bagian 5: Activity Diagram Kelola Produk dan Varian (Admin)
 
-**Aktor:** Admin, Sistem (Database, Storage)
+**Aktor:** Admin | Sistem | Database | Supabase Storage
 
-**Tujuan:** Menggambarkan alur admin mengelola data produk (menambah, mengubah,
-menghapus, mengunggah gambar) beserta varian produk (ukuran, rasa, harga tambahan).
+**Tujuan:** Menggambarkan alur admin mengelola produk (CRUD + upload gambar) dan
+mengelola varian produk (ukuran/rasa dengan harga tambahan) melalui modal
+VariantManager.
 
-**Deskripsi Alur:**
+**Kode Diagram (PlantUML):**
 
-Admin membuka halaman "Kelola Produk" dan sistem menampilkan daftar produk beserta
-gambar, kategori, harga, stok, dan status aktif. Admin dapat menambah atau mengubah
-produk dengan mengisi form; sistem memvalidasi data, mengunggah gambar jika ada,
-lalu menyimpan ke database dan memperbarui daftar. Admin juga dapat menghapus produk
-setelah konfirmasi. Untuk varian, admin membuka modal "Kelola Varian" pada sebuah
-produk, lalu dapat menambah, mengubah, atau menghapus varian dengan menentukan tipe
-(ukuran/rasa), nama, dan harga tambahan.
+```plantuml
+@startuml
+!theme plain
+skinparam defaultFontName Arial
+skinparam defaultFontSize 11
+skinparam backgroundColor #FFFFFF
+skinparam activityBackgroundColor #FFF8F0
+skinparam activityBorderColor #C0392B
+skinparam activityDiamondBackgroundColor #FEF9E7
+skinparam activityDiamondBorderColor #E67E22
+skinparam swimlaneBorderColor #AAAAAA
+skinparam ArrowColor #555555
 
-**Bagan Alur:**
+|#LightBlue|Admin|
+start
+:Buka halaman Kelola Produk;
 
-1. Admin membuka halaman "Kelola Produk".
-2. Sistem menampilkan daftar produk.
-3. Admin memilih aksi: Tambah Produk, Edit Produk, Hapus Produk, atau Kelola Varian.
-4. Keputusan: Aksi yang dipilih?
-   - Tambah/Edit -> lanjut ke langkah 5.
-   - Hapus -> lanjut ke langkah 12.
-   - Kelola Varian -> lanjut ke langkah 15.
-5. Sistem menampilkan form produk (nama, deskripsi, harga, stok, kategori, gambar, aktif).
-6. Admin mengisi dan melengkapi form.
-7. Sistem memvalidasi data (nama wajib, harga/stok valid, kategori wajib).
-8. Keputusan: Data valid?
-   - Tidak -> sistem menampilkan pesan error, kembali ke langkah 6.
-   - Ya -> lanjut ke langkah 9.
-9. Keputusan: Ada file gambar baru?
-   - Ya -> sistem mengunggah gambar ke storage dan mengambil URL.
-   - Tidak -> lanjut ke langkah 10.
-10. Sistem menyimpan data produk (insert atau update).
-11. Sistem memperbarui daftar produk. -> Alur selesai.
-12. (Untuk hapus) Sistem menampilkan dialog konfirmasi.
-13. Keputusan: Admin setuju hapus?
-    - Tidak -> kembali ke daftar.
-    - Ya -> lanjut ke langkah 14.
-14. Sistem menghapus produk dari database, lalu memperbarui daftar. -> Alur selesai.
-15. (Kelola varian) Sistem menampilkan modal daftar varian produk.
-16. Admin memilih: Tambah Varian, Edit Varian, atau Hapus Varian.
-17. Admin mengisi/mengubah tipe, nama, dan harga tambahan varian.
-18. Sistem memvalidasi (nama wajib, harga valid, tidak duplikat).
-19. Keputusan: Data valid?
-    - Tidak -> sistem menampilkan pesan error, kembali ke langkah 17.
-    - Ya -> lanjut ke langkah 20.
-20. Sistem menyimpan atau menghapus data varian di database.
-21. Sistem memperbarui daftar varian.
-22. Alur selesai.
+|#LightGreen|Database|
+:SELECT produk JOIN kategori;
 
-**Kode Diagram (Mermaid):**
+|#LightCyan|Sistem|
+:Tampilkan daftar produk\n(nama, gambar, harga, stok, status);
 
-```mermaid
-flowchart TD
-    A([Mulai]) --> B[Buka halaman Kelola Produk]
-    B --> C[Sistem tampilkan daftar produk]
-    C --> D{Admin memilih aksi}
-    D -- Tambah/Edit --> E[Sistem tampilkan form produk]
-    D -- Hapus --> F[Tampilkan dialog konfirmasi hapus]
-    D -- Kelola Varian --> G[Tampilkan modal daftar varian]
-    E --> H[Admin isi form produk]
-    H --> I{Validasi data produk?}
-    I -- Tidak --> J[Tampilkan pesan error] --> H
-    I -- Ya --> K{Ada gambar baru?}
-    K -- Ya --> L[Unggah gambar ke storage & ambil URL]
-    K -- Tidak --> M[Simpan data produk ke database]
-    L --> M
-    M --> N[Perbarui daftar produk] --> Z([Selesai])
-    F --> O{Admin setuju hapus?}
-    O -- Tidak --> Z
-    O -- Ya --> P[Hapus produk dari database]
-    P --> N
-    G --> Q{Admin memilih aksi varian}
-    Q -- Tambah/Edit --> R[Isi tipe, nama, harga tambahan]
-    R --> S{Validasi varian?}
-    S -- Tidak --> T[Tampilkan pesan error] --> R
-    S -- Ya --> U[Simpan varian ke database]
-    U --> V[Perbarui daftar varian]
-    Q -- Hapus --> W[Hapus varian dari database]
-    W --> V
-    V --> Z
+|#LightBlue|Admin|
+if (Pilih aksi?) then (Tambah/Edit Produk)
+  :Klik "+ Tambah" atau ikon edit;
+  |#LightCyan|Sistem|
+  if (Edit?) then (Ya)
+    :Form diisi data produk existing;
+  else (Tambah)
+    :Form kosong;
+  endif
+  |#LightBlue|Admin|
+  :Isi / ubah: nama, deskripsi, harga,\nstok, kategori, status aktif;
+  if (Ada file gambar baru?) then (Ya)
+    :Pilih file gambar;
+    |#LightCyan|Sistem|
+    :Validasi data form;
+    if (Data valid?) then (Ya)
+    else (Tidak)
+      :Tampilkan error;
+      |#LightBlue|Admin|
+      :Perbaiki data;
+      |#LightCyan|Sistem|
+    endif
+    |#Wheat|Supabase Storage|
+    :Upload file ke bucket\nproduct-images;
+    if (Upload berhasil?) then (Ya)
+      :Return public URL gambar;
+    else (Tidak)
+      :Return error;
+      |#LightCyan|Sistem|
+      :Tampilkan error upload;
+      stop
+    endif
+  else (Tidak ada gambar baru)
+    |#LightCyan|Sistem|
+    :Validasi data form;
+    if (Data valid?) then (Ya)
+    else (Tidak)
+      :Tampilkan error;
+      |#LightBlue|Admin|
+      :Perbaiki data;
+      |#LightCyan|Sistem|
+    endif
+  endif
+  |#LightGreen|Database|
+  if (Tambah?) then (Ya)
+    :INSERT ke tabel produk;
+  else (Edit)
+    :UPDATE tabel produk;
+  endif
+else if (Pilih aksi?) then (Hapus Produk)
+  :Klik ikon hapus;
+  |#LightCyan|Sistem|
+  :Tampilkan dialog konfirmasi;
+  note right: Produk yang pernah dipesan\nsebaiknya dinonaktifkan saja
+  |#LightBlue|Admin|
+  if (Konfirmasi hapus?) then (Ya)
+    |#LightGreen|Database|
+    :DELETE produk;
+    note right: opsi_varian terhapus\n(ON DELETE CASCADE)
+  else (Batal)
+    stop
+  endif
+else (Kelola Varian)
+  :Klik ikon Settings\npada baris produk;
+  |#LightCyan|Sistem|
+  :Buka modal VariantManager;
+  |#LightGreen|Database|
+  :SELECT opsi_varian\nuntuk produk ini;
+  |#LightCyan|Sistem|
+  :Tampilkan daftar varian\ndikelompokkan per tipe;
+  |#LightBlue|Admin|
+  if (Aksi varian?) then (Tambah Varian)
+    :Pilih tipe (ukuran/rasa),\nisi nama & harga tambahan;
+    |#LightCyan|Sistem|
+    if (Nama tidak duplikat\n& harga ≥ 0?) then (Ya)
+    else (Tidak)
+      :Tampilkan error validasi;
+      |#LightBlue|Admin|
+      :Perbaiki input;
+      |#LightCyan|Sistem|
+    endif
+    |#LightGreen|Database|
+    :INSERT ke opsi_varian;
+  else if (Aksi varian?) then (Edit Varian)
+    :Klik ikon edit varian;
+    |#LightCyan|Sistem|
+    :Form terisi data varian;
+    |#LightBlue|Admin|
+    :Ubah nama / harga tambahan;
+    |#LightCyan|Sistem|
+    if (Data valid?) then (Ya)
+    else (Tidak)
+      :Tampilkan error;
+      |#LightBlue|Admin|
+      :Perbaiki;
+      |#LightCyan|Sistem|
+    endif
+    |#LightGreen|Database|
+    :UPDATE opsi_varian;
+  else (Hapus Varian)
+    :Klik ikon hapus varian;
+    |#LightCyan|Sistem|
+    :Tampilkan dialog konfirmasi;
+    |#LightBlue|Admin|
+    if (Konfirmasi?) then (Ya)
+      |#LightGreen|Database|
+      :DELETE opsi_varian;
+    else (Batal)
+    endif
+  endif
+endif
+
+|#LightGreen|Database|
+:Return data terbaru;
+
+|#LightCyan|Sistem|
+:Perbarui daftar produk / varian;
+
+|#LightBlue|Admin|
+:Lihat hasil perubahan;
+stop
+@enduml
 ```
 
 ---
 
 ## Bagian 6: Activity Diagram Kelola Pesanan (Admin)
 
-**Aktor:** Admin, Sistem (Realtime)
+**Aktor:** Admin | Sistem | Database
 
-**Tujuan:** Menggambarkan alur admin melihat dan mengelola pesanan yang masuk,
-termasuk memantau pesanan secara realtime dan memperbarui status pengiriman
-setelah pembayaran lunas.
+**Tujuan:** Menggambarkan alur admin memantau pesanan secara real-time, melihat
+detail, dan memperbarui status pengiriman (fulfillment status) khusus untuk
+pesanan yang sudah lunas.
 
-**Deskripsi Alur:**
+**Kode Diagram (PlantUML):**
 
-Admin masuk ke dasbor pesanan. Sistem menampilkan ringkasan penjualan dan daftar
-pesanan yang diperbarui secara realtime setiap ada pesanan baru. Admin dapat
-menyaring daftar berdasarkan status pembayaran. Admin mengklik sebuah pesanan untuk
-melihat detailnya. Jika status pembayaran sudah "Lunas", admin dapat memperbarui
-status pengiriman dari "Diproses" menjadi "Siap Diambil" lalu "Selesai". Sistem
-menyimpan perubahan ke database sehingga pelanggan dapat melihat status terbaru
-melalui timeline di halaman cek pesanan.
+```plantuml
+@startuml
+!theme plain
+skinparam defaultFontName Arial
+skinparam defaultFontSize 11
+skinparam backgroundColor #FFFFFF
+skinparam activityBackgroundColor #FFF8F0
+skinparam activityBorderColor #C0392B
+skinparam activityDiamondBackgroundColor #FEF9E7
+skinparam activityDiamondBorderColor #E67E22
+skinparam swimlaneBorderColor #AAAAAA
+skinparam ArrowColor #555555
 
-**Bagan Alur:**
+|#LightBlue|Admin|
+start
+:Buka Dasbor Pesanan;
 
-1. Admin membuka Dasbor Pesanan.
-2. Sistem menampilkan ringkasan penjualan dan daftar pesanan (realtime).
-3. Admin dapat memilih filter status pembayaran.
-4. Sistem menampilkan daftar pesanan sesuai filter.
-5. Admin mengklik salah satu pesanan.
-6. Sistem menampilkan detail pesanan.
-7. Keputusan: Status pembayaran "Lunas"?
-   - Tidak -> status pengiriman terkunci (tidak bisa diubah).
-   - Ya -> lanjut ke langkah 8.
-8. Admin memilih status pengiriman baru (Diproses / Siap Diambil / Selesai).
-9. Sistem memperbarui status pengiriman di database.
-10. Sistem memperbarui tampilan dan mengirim pembaruan realtime.
-11. Pelanggan melihat status terbaru pada halaman cek pesanan.
-12. Alur selesai.
+|#LightGreen|Database|
+:SELECT pesanan\n(50/halaman, ORDER BY created_at DESC);
 
-**Kode Diagram (Mermaid):**
+|#LightCyan|Sistem|
+:Hitung & tampilkan\nSalesSummary (pesanan lunas,\ntotal pendapatan, sedang diproses);
+:Subscribe Supabase Realtime\n(postgres_changes pada tabel pesanan);
+:Tampilkan daftar pesanan;
 
-```mermaid
-flowchart TD
-    A([Mulai]) --> B[Buka Dasbor Pesanan]
-    B --> C[Sistem tampilkan ringkasan & daftar pesanan realtime]
-    C --> D[Admin pilih filter status pembayaran]
-    D --> E[Sistem tampilkan pesanan sesuai filter]
-    E --> F[Admin klik detail pesanan]
-    F --> G[Sistem tampilkan detail pesanan]
-    G --> H{Status pembayaran lunas?}
-    H -- Tidak --> I[Status pengiriman terkunci] --> Z([Selesai])
-    H -- Ya --> J[Admin pilih status pengiriman baru]
-    J --> K[Update status pengiriman di database]
-    K --> L[Perbarui tampilan & kirim update realtime]
-    L --> M[Pelanggan melihat status terbaru di cek pesanan]
-    M --> Z
+|#LightGreen|Database|
+fork
+  :Realtime INSERT → pesanan baru masuk;
+  |#LightCyan|Sistem|
+  :Fetch pesanan baru + relasi,\ntambahkan ke daftar;
+fork again
+  :Realtime UPDATE → status berubah;
+  |#LightCyan|Sistem|
+  :Perbarui baris di state lokal;
+fork again
+  :Realtime DELETE;
+  |#LightCyan|Sistem|
+  :Hapus baris dari state lokal;
+end fork
+
+|#LightBlue|Admin|
+:Pilih filter status pembayaran\n& urutan tampilan;
+
+|#LightCyan|Sistem|
+:Tampilkan daftar pesanan\nsesuai filter & urutan;
+
+|#LightBlue|Admin|
+:Klik baris pesanan;
+
+|#LightCyan|Sistem|
+:Buka modal OrderDetailModal\n(nama, HP, alamat, item,\ncatatan, total, status);
+
+|#LightBlue|Admin|
+if (Status pembayaran = lunas?) then (Ya)
+  :Buka FulfillmentDropdown;
+  :Pilih status pengiriman:\nDiproses / Siap Diambil / Selesai;
+  |#LightGreen|Database|
+  :UPDATE status_pesanan\ndi tabel pesanan;
+  |#LightCyan|Sistem|
+  :Perbarui tampilan daftar & modal;
+  :Realtime UPDATE dikirim\nke semua klien berlangganan;
+  note right: Pelanggan melihat\nstatus terbaru di\nhalaman cek pesanan
+else (Tidak)
+  :Kolom status kirim terkunci\n(tampil tanda "—");
+endif
+
+|#LightBlue|Admin|
+:Tutup modal;
+stop
+@enduml
+```
+
+---
+
+## Bagian 7: Activity Diagram Rekomendasi Budget (Pelanggan)
+
+**Aktor:** Pelanggan | Sistem
+
+**Tujuan:** Menggambarkan alur pelanggan menggunakan fitur rekomendasi budget
+untuk mendapatkan paket menu optimal. Kalkulasi dilakukan di sisi klien
+menggunakan data produk yang sudah dimuat — tanpa query tambahan ke database.
+
+**Kode Diagram (PlantUML):**
+
+```plantuml
+@startuml
+!theme plain
+skinparam defaultFontName Arial
+skinparam defaultFontSize 11
+skinparam backgroundColor #FFFFFF
+skinparam activityBackgroundColor #FFF8F0
+skinparam activityBorderColor #C0392B
+skinparam activityDiamondBackgroundColor #FEF9E7
+skinparam activityDiamondBorderColor #E67E22
+skinparam swimlaneBorderColor #AAAAAA
+skinparam ArrowColor #555555
+
+|#LightYellow|Pelanggan|
+start
+:Buka halaman utama;
+
+|#LightCyan|Sistem|
+:Tampilkan panel\nRekomendasi Budget;
+
+|#LightYellow|Pelanggan|
+:Geser slider atau ketik\nnominal budget;
+
+|#LightCyan|Sistem|
+if (Budget ≥ harga produk termurah?) then (Ya)
+else (Tidak)
+  :Tampilkan "Budget belum cukup";
+  |#LightYellow|Pelanggan|
+  :Naikkan budget;
+  |#LightCyan|Sistem|
+endif
+:Hitung kombinasi menu\ngetRecommendations(products, budget)\n[kalkulasi client-side];
+if (Ada kombinasi yang sesuai?) then (Ya)
+else (Tidak)
+  :Tampilkan "Belum ada\nkombinasi yang pas";
+  |#LightYellow|Pelanggan|
+  :Sesuaikan budget;
+  |#LightCyan|Sistem|
+endif
+:Tampilkan maks. 3 kartu rekomendasi:\nPilihan Terbaik, Hemat Banget, Lebih Banyak;
+note right
+  Setiap kartu menampilkan:
+  - Daftar item
+  - Total harga
+  - Efisiensi budget (%)
+  - Kembalian
+end note
+
+|#LightYellow|Pelanggan|
+:Pilih satu kartu,\nklik tombol;
+
+|#LightCyan|Sistem|
+if (Ada produk bervarian\ndalam paket?) then (Ya)
+  :Masukkan item tanpa varian\nke keranjang langsung;
+  :Buka VariantBottomSheet\nuntuk produk bervarian;
+  |#LightYellow|Pelanggan|
+  :Pilih varian di modal;
+  |#LightCyan|Sistem|
+  :Tambahkan produk bervarian\nke keranjang;
+else (Tidak)
+  :Masukkan semua item\nke keranjang langsung;
+endif
+
+:Buka CartDrawer;
+
+|#LightYellow|Pelanggan|
+:Lihat ringkasan keranjang;
+stop
+@enduml
+```
+
+---
+
+## Bagian 8: Activity Diagram Melihat Detail & Memilih Varian Produk (Pelanggan)
+
+**Aktor:** Pelanggan | Sistem | Database
+
+**Tujuan:** Menggambarkan alur pelanggan membuka halaman detail produk, memilih
+varian (wajib jika tersedia), melihat perubahan harga dinamis, dan menambahkan
+produk ke keranjang.
+
+**Kode Diagram (PlantUML):**
+
+```plantuml
+@startuml
+!theme plain
+skinparam defaultFontName Arial
+skinparam defaultFontSize 11
+skinparam backgroundColor #FFFFFF
+skinparam activityBackgroundColor #FFF8F0
+skinparam activityBorderColor #C0392B
+skinparam activityDiamondBackgroundColor #FEF9E7
+skinparam activityDiamondBorderColor #E67E22
+skinparam swimlaneBorderColor #AAAAAA
+skinparam ArrowColor #555555
+
+|#LightYellow|Pelanggan|
+start
+:Klik kartu produk di katalog;
+
+|#LightCyan|Sistem|
+:Baca ID produk dari URL (:id);
+
+|#LightGreen|Database|
+fork
+  :SELECT produk WHERE id = :id;
+fork again
+  :SELECT opsi_varian\nWHERE produk_id = :id AND aktif = true;
+end fork
+:Return data produk & varian;
+
+|#LightCyan|Sistem|
+if (Produk ditemukan & aktif?) then (Ya)
+else (Tidak)
+  :Tampilkan error\n"Produk tidak ditemukan atau tidak aktif";
+  stop
+endif
+:Tampilkan: nama, kategori,\ngambar, deskripsi, harga dasar;
+if (Stok > 0?) then (Ya)
+else (Tidak)
+  :Tampilkan overlay "Stok Habis",\ntombol tambah di-disable;
+  stop
+endif
+if (Produk memiliki varian?) then (Ya)
+  :Tampilkan selector varian\nper tipe (ukuran / rasa);
+  |#LightYellow|Pelanggan|
+  :Pilih satu opsi per tipe;
+  |#LightCyan|Sistem|
+  :Hitung harga final =\nharga dasar + sum(harga_tambahan);
+  :Update tampilan harga secara real-time;
+  if (Semua tipe varian dipilih?) then (Ya)
+  else (Tidak)
+    :Tombol tambah di-disable,\ntampilkan hint tipe yang belum dipilih;
+    |#LightYellow|Pelanggan|
+    :Pilih varian yang belum;
+    |#LightCyan|Sistem|
+  endif
+else (Tidak ada varian)
+endif
+
+|#LightYellow|Pelanggan|
+:Atur jumlah (qty) via stepper\n(min 1, maks stok);
+:Klik "Tambah ke Keranjang";
+
+|#LightCyan|Sistem|
+:Generate cart_key unik\n(productId::variantIds);
+if (cart_key sudah ada di keranjang?) then (Ya)
+  :Merge: tambah qty,\ntidak melebihi stok;
+else (Tidak)
+  :Tambahkan item baru ke keranjang;
+endif
+:Simpan ke Zustand + localStorage;
+:Tampilkan notifikasi sukses\n& feedback visual;
+
+|#LightYellow|Pelanggan|
+:Lanjut belanja atau buka keranjang;
+stop
+@enduml
+```
+
+---
+
+## Bagian 9: Activity Diagram Mengelola Keranjang Belanja (Pelanggan)
+
+**Aktor:** Pelanggan | Sistem
+
+**Tujuan:** Menggambarkan alur pelanggan melihat, mengubah jumlah, dan menghapus
+item dalam keranjang sebelum melanjutkan ke checkout. Keranjang di-persist di
+localStorage via Zustand middleware.
+
+**Kode Diagram (PlantUML):**
+
+```plantuml
+@startuml
+!theme plain
+skinparam defaultFontName Arial
+skinparam defaultFontSize 11
+skinparam backgroundColor #FFFFFF
+skinparam activityBackgroundColor #FFF8F0
+skinparam activityBorderColor #C0392B
+skinparam activityDiamondBackgroundColor #FEF9E7
+skinparam activityDiamondBorderColor #E67E22
+skinparam swimlaneBorderColor #AAAAAA
+skinparam ArrowColor #555555
+
+|#LightYellow|Pelanggan|
+start
+:Klik ikon keranjang di header;
+
+|#LightCyan|Sistem|
+:Buka CartDrawer\n(panel geser dari kanan);
+if (Keranjang kosong?) then (Ya)
+  :Tampilkan ikon kosong\n"Keranjang masih kosong"\n+ tombol "Mulai Belanja";
+  |#LightYellow|Pelanggan|
+  if (Klik Mulai Belanja?) then (Ya)
+    |#LightCyan|Sistem|
+    :Tutup CartDrawer;
+    stop
+  else (Tidak)
+    stop
+  endif
+else (Tidak)
+endif
+:Tampilkan daftar item:\nnama, label varian, harga, qty;
+:Tampilkan total harga keseluruhan;
+
+|#LightYellow|Pelanggan|
+if (Pilih aksi?) then (Tambah qty +)
+  |#LightCyan|Sistem|
+  :Tambah qty 1\n(maks = stok snapshot);
+  :Perbarui tampilan;
+  |#LightYellow|Pelanggan|
+else if (Pilih aksi?) then (Kurangi qty -)
+  |#LightCyan|Sistem|
+  :Kurangi qty 1;
+  if (qty menjadi 0?) then (Ya)
+    :Hapus item dari keranjang;
+  else (Tidak)
+    :Perbarui tampilan;
+  endif
+  |#LightYellow|Pelanggan|
+else if (Pilih aksi?) then (Hapus item)
+  |#LightCyan|Sistem|
+  :Hapus item dari keranjang;
+  :Perbarui tampilan;
+  if (Keranjang kosong setelah hapus?) then (Ya)
+    :Tampilkan tampilan kosong;
+  else (Tidak)
+  endif
+  |#LightYellow|Pelanggan|
+else (Checkout)
+  |#LightCyan|Sistem|
+  :Tutup CartDrawer;
+  :Navigasi ke halaman /checkout;
+  stop
+endif
+:Lanjut interaksi keranjang;
+stop
+@enduml
+```
+
+---
+
+## Bagian 10: Activity Diagram Pemrosesan Webhook Pembayaran (Sistem)
+
+**Aktor:** Midtrans | Server (midtrans-webhook) | Database
+
+**Tujuan:** Menggambarkan alur server memproses notifikasi pembayaran dari Midtrans
+secara otomatis — termasuk verifikasi keamanan (SHA-512 signature), idempotency,
+validasi nominal, mapping status, dan pengembalian stok jika pembayaran gagal.
+
+**Kode Diagram (PlantUML):**
+
+```plantuml
+@startuml
+!theme plain
+skinparam defaultFontName Arial
+skinparam defaultFontSize 11
+skinparam backgroundColor #FFFFFF
+skinparam activityBackgroundColor #FFF8F0
+skinparam activityBorderColor #C0392B
+skinparam activityDiamondBackgroundColor #FEF9E7
+skinparam activityDiamondBorderColor #E67E22
+skinparam swimlaneBorderColor #AAAAAA
+skinparam ArrowColor #555555
+
+|#Pink|Midtrans|
+start
+:Kirim notifikasi POST\nke endpoint midtrans-webhook;
+
+|#LightGreen|Server (midtrans-webhook)|
+:Terima & parse payload JSON;
+:Hitung SHA-512 signature:\norder_id + status_code +\ngross_amount + server_key;
+if (Signature cocok?) then (Ya)
+else (Tidak)
+  :Log error;
+  :Return HTTP 200\n(mencegah retry Midtrans);
+  stop
+endif
+
+|#LightGreen|Server (midtrans-webhook)|
+
+|#LightSkyBlue|Database|
+:SELECT pesanan\nWHERE midtrans_order_id = ?;
+
+|#LightGreen|Server (midtrans-webhook)|
+if (Pesanan ditemukan?) then (Ya)
+else (Tidak)
+  :Return HTTP 200;
+  stop
+endif
+if (Status pesanan sudah final?\n(lunas/kadaluarsa/dibatalkan/\nditolak/dikembalikan)) then (Tidak)
+else (Ya — idempotency)
+  :Abaikan notifikasi,\nreturn 200;
+  stop
+endif
+:Validasi nominal pembayaran;
+if (|notified_amount − total_harga| ≤ Rp 1?) then (Ya)
+else (Tidak)
+  :Log mismatch;
+  :Return HTTP 200;
+  stop
+endif
+:Mapping status Midtrans\n→ status lokal:\ncapture+accept→lunas,\nsettle→lunas,\ndeny→ditolak, dll.;
+if (Ada status yang perlu diperbarui?\n(bukan "pending")) then (Ya)
+else (Tidak)
+  :Return "No action needed";
+  stop
+endif
+
+|#LightSkyBlue|Database|
+:UPDATE status_pembayaran\ndi tabel pesanan;
+
+|#LightGreen|Server (midtrans-webhook)|
+if (Status baru =\nkadaluarsa / dibatalkan / ditolak?) then (Ya)
+  |#LightSkyBlue|Database|
+  :SELECT produk_id, jumlah\nFROM detail_pesanan\nWHERE pesanan_id = ?;
+  :Kembalikan stok setiap item:\nRPC tambah_stok per produk;
+  |#LightGreen|Server (midtrans-webhook)|
+  note right: Stok kembali karena\npembayaran tidak jadi
+else (Tidak — lunas)
+  note right: Stok TIDAK dikembalikan.\nReservasi dari create-order\nmenjadi permanen.
+endif
+:Return HTTP 200 "OK";
+stop
+@enduml
+```
+
+---
+
+## Bagian 11: Activity Diagram Melihat Katalog & Filter Kategori (Pelanggan)
+
+**Aktor:** Pelanggan | Sistem | Database
+
+**Tujuan:** Menggambarkan alur dasar penggunaan sistem — pelanggan membuka aplikasi,
+sistem mengambil data produk dari Supabase, dan pelanggan menyaring tampilan
+berdasarkan kategori yang dipilih.
+
+**Kode Diagram (PlantUML):**
+
+```plantuml
+@startuml
+!theme plain
+skinparam defaultFontName Arial
+skinparam defaultFontSize 11
+skinparam backgroundColor #FFFFFF
+skinparam activityBackgroundColor #FFF8F0
+skinparam activityBorderColor #C0392B
+skinparam activityDiamondBackgroundColor #FEF9E7
+skinparam activityDiamondBorderColor #E67E22
+skinparam swimlaneBorderColor #AAAAAA
+skinparam ArrowColor #555555
+
+|#LightYellow|Pelanggan|
+start
+:Buka halaman utama (/);
+
+|#LightCyan|Sistem|
+:Panggil useProducts()\nfetch produk JOIN kategori;
+
+|#LightSkyBlue|Database|
+:SELECT produk, kategori;
+:Return data produk aktif;
+
+|#LightCyan|Sistem|
+if (Sedang loading?) then (Ya)
+  :Tampilkan skeleton\n4 kartu animasi;
+  note right: Tunggu hingga\ndata selesai dimuat
+else (Tidak)
+endif
+if (Terjadi error?) then (Ya)
+  :Tampilkan pesan error;
+  stop
+else (Tidak)
+endif
+if (Ada produk tersedia?) then (Ya)
+else (Tidak)
+  :Tampilkan\n"Belum ada menu tersedia saat ini";
+  stop
+endif
+:Tampilkan grid katalog produk\n(gambar, nama, harga, kategori);
+:Buat daftar kategori unik\ndari data produk (termasuk "Semua");
+:Tampilkan tombol-tombol\nfilter kategori;
+
+|#LightYellow|Pelanggan|
+:Pilih kategori;
+
+|#LightCyan|Sistem|
+:Filter produk berdasarkan\nkategori yang dipilih\n(client-side, tanpa query baru);
+if (Hasil filter kosong?) then (Ya)
+  :Tampilkan\n"Tidak ada menu di kategori ini";
+else (Tidak)
+  :Tampilkan produk\nyang sudah difilter;
+endif
+
+|#LightYellow|Pelanggan|
+:Menelusuri produk;
+stop
+@enduml
 ```

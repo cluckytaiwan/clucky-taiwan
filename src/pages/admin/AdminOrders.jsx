@@ -2,10 +2,11 @@
 import { useEffect, useState } from "react";
 import { supabase } from "../../lib/supabaseClient";
 import { formatRupiah } from "../../utils/formatCurrency";
-import { ChevronDown, ChevronUp, Eye, Loader2 } from "lucide-react";
+import { ChevronDown, ChevronUp, Loader2 } from "lucide-react";
 import SalesSummary from "../../components/admin/SalesSummary";
 import FulfillmentDropdown from "../../components/admin/FulfillmentDropdown";
 import OrderDetailModal from "../../components/admin/OrderDetailModal";
+import { markOrderHandled } from "../../context/OrderNotificationContext";
 
 /* ─── Konstanta (dipakai di tabel baris, bukan di sub-komponen) ─ */
 const PAYMENT_STATUS = {
@@ -31,7 +32,7 @@ export default function AdminOrders() {
   const [orders, setOrders]               = useState([]);
   const [totalCount, setTotalCount]       = useState(0);
   const [page, setPage]                   = useState(0);
-  const PAGE_SIZE = 50;
+  const PAGE_SIZE = 25;
 
   const [loading, setLoading]             = useState(true);
   const [filter, setFilter]               = useState("all");
@@ -87,6 +88,7 @@ export default function AdminOrders() {
   }
 
   async function updateFulfillment(orderId, newStatus) {
+    markOrderHandled(orderId);
     setLoadingId(orderId);
     const { error: updateError } = await supabase
       .from("pesanan")

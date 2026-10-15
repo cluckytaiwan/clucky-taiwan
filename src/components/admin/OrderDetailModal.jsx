@@ -65,7 +65,7 @@ export default function OrderDetailModal({ order, onClose, onUpdate, loadingId }
             <p className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest mb-2">Pelanggan</p>
             <p className="font-semibold text-neutral-900">{order.nama_pelanggan}</p>
             <p className="text-sm text-neutral-500">{order.no_hp_pelanggan}</p>
-            {order.alamat_pelanggan && (
+            {order.alamat_pelanggan && order.alamat_pelanggan !== "-" && (
               <p className="text-sm text-neutral-500 mt-0.5 flex gap-1.5">
                 <span>📍</span><span>{order.alamat_pelanggan}</span>
               </p>
