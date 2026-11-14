@@ -5,6 +5,7 @@ import { isValidPhoneNumber } from "../utils/validators";
 import { User, Phone, QrCode, X, Clock, CreditCard } from "lucide-react";
 import { supabase } from "../lib/supabaseClient";
 import { loadSnap } from "../utils/loadSnap";
+import { pollOrderStatus } from "../utils/orderStatusApi";
 import { saveCustomerProfile, getCustomerProfile, saveOrderToHistory } from "../utils/storage";
 
 const PENDING_KEY = "clucky_pending_payment";
@@ -124,51 +125,38 @@ export default function CheckoutForm({ onBack, onSuccess }) {
       return;
     }
 
-    const channel = supabase
-      .channel(`payment-check-${orderId}`)
-      .on(
-        "postgres_changes",
-        { event: "UPDATE", schema: "public", table: "pesanan", filter: `id=eq.${orderId}` },
-        (payload) => {
-          if (payload.new.status_pembayaran === "lunas") {
-            if (window.snap && typeof window.snap.hide === "function") window.snap.hide();
-            localStorage.setItem(LAST_ORDER_KEY, JSON.stringify({ kode, hp: phone }));
-            saveOrderToHistory({ kode, hp: phone, total, date: new Date().toISOString() });
-            saveCustomerProfile(form);
-            clearPendingPayment();
-            supabase.removeChannel(channel);
-            clearCart();
-            onSuccess(kode);
-          }
-        }
-      )
-      .subscribe();
+    // Pantau pembayaran via Edge Function (kode + no HP), bukan Realtime anon.
+    let finished = false;
+    function finishSuccess() {
+      if (finished) return;
+      finished = true;
+      stopPolling();
+      localStorage.setItem(LAST_ORDER_KEY, JSON.stringify({ kode, hp: phone }));
+      saveOrderToHistory({ kode, hp: phone, total, date: new Date().toISOString() });
+      saveCustomerProfile(form);
+      clearPendingPayment();
+      clearCart();
+      onSuccess(kode);
+    }
+
+    const stopPolling = pollOrderStatus(kode, phone, (order) => {
+      if (order.status === "lunas") {
+        if (window.snap && typeof window.snap.hide === "function") window.snap.hide();
+        finishSuccess();
+        return true;
+      }
+      return false;
+    });
 
     window.snap.pay(snapToken, {
-      onSuccess: () => {
-        localStorage.setItem(LAST_ORDER_KEY, JSON.stringify({ kode, hp: phone }));
-        saveOrderToHistory({ kode, hp: phone, total, date: new Date().toISOString() });
-        saveCustomerProfile(form);
-        clearPendingPayment();
-        supabase.removeChannel(channel);
-        clearCart();
-        onSuccess(kode);
-      },
-      onPending: () => {
-        localStorage.setItem(LAST_ORDER_KEY, JSON.stringify({ kode, hp: phone }));
-        saveOrderToHistory({ kode, hp: phone, total, date: new Date().toISOString() });
-        saveCustomerProfile(form);
-        clearPendingPayment();
-        supabase.removeChannel(channel);
-        clearCart();
-        onSuccess(kode);
-      },
+      onSuccess: finishSuccess,
+      onPending: finishSuccess,
       onError: () => {
-        supabase.removeChannel(channel);
+        stopPolling();
         setServerError("Pembayaran gagal, silakan coba lagi.");
       },
       onClose: () => {
-        supabase.removeChannel(channel);
+        stopPolling();
         // Simpan ke localStorage dan tampilkan modal
         savePendingPayment({ snapToken, kode, hp: phone, orderId, total });
         setPendingModal({ snapToken, kode, orderId, phone, total });
