@@ -174,22 +174,22 @@ export default function BudgetRecommender({ products, onCartOpen }) {
   const comboNeedsVariant = (items) => items.some((i) => i.has_variants);
 
   return (
-    <section id="rekomendasi" className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8 scroll-mt-20">
+    <section id="rekomendasi" aria-labelledby="rekomendasi-title" className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8 scroll-mt-20">
       {/* ── Judul section ──────────────────────────────────────────────────── */}
       <div className="text-center mb-8">
-        <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/20 text-primary font-semibold text-sm mb-4">
+        <p className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary/10 border border-primary/20 text-primary font-semibold text-sm mb-3">
           Rekomendasi Sesuai Budget
-        </div>
-        {/* <h2 className="font-display text-3xl sm:text-4xl font-extrabold text-neutral-900 mb-3">
-          Berapa Uangmu Hari Ini?
-        </h2> */}
+        </p>
+        <h2 id="rekomendasi-title" className="font-display text-3xl sm:text-4xl font-extrabold text-neutral-900 mb-2">
+          Bingung pilih menu? Atur budget-mu
+        </h2>
         <p className="text-neutral-500 font-body text-base max-w-lg mx-auto">
           Geser slider atau ketik nominal budget — kami otomatis carikan kombinasi menu terbaik untukmu.
         </p>
       </div>
 
       {/* ── Panel Utama ─────────────────────────────────────────────────────── */}
-      <div className="rounded-2xl bg-gradient-to-br from-primary/5 via-white to-secondary/10 border border-neutral-200/80 shadow-sm overflow-hidden">
+      <div className="mx-auto max-w-5xl rounded-2xl bg-gradient-to-br from-primary/5 via-white to-secondary/10 border border-neutral-200/80 shadow-sm overflow-hidden">
 
         {/* ── Budget Input Area ───────────────────────────────────────────── */}
         <div className="px-6 pt-8 pb-6 sm:px-10 bg-white/60 border-b border-neutral-100">
@@ -268,11 +268,8 @@ export default function BudgetRecommender({ products, onCartOpen }) {
         <div className="px-6 py-6 sm:px-10">
           {!hasSearched || budget === 0 ? (
             /* Empty state — belum isi budget */
-            <div className="flex flex-col items-center justify-center py-12 text-center">
-              {/* <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center mb-4">
-                <Sparkles size={28} className="text-primary" />
-              </div> */}
-              <p className="font-semibold text-neutral-700 mb-1">Geser slider di atas untuk mulai</p>
+            <div className="flex flex-col items-center justify-center py-6 text-center">
+              <p className="font-semibold text-neutral-700 mb-1">Geser slider atau ketik nominal untuk mulai</p>
               <p className="text-sm text-neutral-400">Rekomendasi paket menu akan langsung muncul di sini</p>
             </div>
           ) : budget < minPrice ? (

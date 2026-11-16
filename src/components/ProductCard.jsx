@@ -39,7 +39,7 @@ export default function ProductCard({ product }) {
   }
 
   return (
-    <div className="group mx-auto flex h-full w-full max-w-[260px] flex-col overflow-hidden rounded-xl border border-neutral-200 bg-surface p-3 shadow-sm transition-shadow hover:shadow-md sm:p-4">
+    <div className="group flex h-full w-full flex-col overflow-hidden rounded-xl border border-neutral-200 bg-surface p-3 shadow-sm transition-shadow hover:shadow-md sm:p-4">
       {/* a. Image wrapper — fixed height 160px */}
       <Link to={`/produk/${product.id}`} className="relative block h-[160px] overflow-hidden rounded-lg bg-neutral-100">
         {product.image_url ? (

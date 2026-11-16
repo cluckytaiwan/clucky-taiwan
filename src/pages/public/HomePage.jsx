@@ -106,8 +106,16 @@ export default function HomePage() {
 
       {/* ===== BUDGET RECOMMENDER ===== */}
       {/* Fitur baru: rekomendasi sesuai budget pelanggan. Disembunyikan saat loading/error agar UX rapi */}
-      {!loading && !error && products.length > 0 && (
-        <BudgetRecommender products={products} onCartOpen={() => setCartOpen(true)} />
+      {loading ? (
+        // Placeholder setinggi panel rekomendasi agar katalog tidak "melompat" saat data masuk
+        <section aria-hidden="true" className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
+          <div className="mx-auto mb-8 h-24 max-w-lg animate-pulse rounded-2xl bg-neutral-100" />
+          <div className="mx-auto h-72 max-w-5xl animate-pulse rounded-2xl bg-neutral-100" />
+        </section>
+      ) : (
+        !error && products.length > 0 && (
+          <BudgetRecommender products={products} onCartOpen={() => setCartOpen(true)} />
+        )
       )}
 
       {/* ===== GRID KATALOG PRODUK ===== */}
