@@ -3,6 +3,7 @@ import { useEffect, useState, useMemo } from "react";
 import { supabase } from "../../lib/supabaseClient";
 import { Pencil, Trash2, Plus, X, Settings2, Search, Power } from "lucide-react";
 import toast from "react-hot-toast";
+import { useDialogFocus } from "../../hooks/useDialogFocus";
 import VariantManager from "../../components/admin/VariantManager";
 import StockStepper from "../../components/admin/StockStepper";
 import { compressImage } from "../../utils/compressImage";
@@ -36,6 +37,8 @@ export default function AdminProducts() {
   const [confirmDelete, setConfirmDelete] = useState(null);
   const [managingVariantsFor, setManagingVariantsFor] = useState(null);
   const [imagePreview, setImagePreview] = useState("");
+  const formDialogRef = useDialogFocus(showForm, () => setShowForm(false));
+  const deleteDialogRef = useDialogFocus(Boolean(confirmDelete), () => setConfirmDelete(null));
 
   // Pratinjau foto yang dipilih
   useEffect(() => {
@@ -45,13 +48,6 @@ export default function AdminProducts() {
     return () => URL.revokeObjectURL(url);
   }, [imageFile]);
 
-  // Esc menutup modal form
-  useEffect(() => {
-    if (!showForm) return;
-    const onKey = (e) => { if (e.key === "Escape") setShowForm(false); };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [showForm]);
 
   // Filter & search state
   const [filter, setFilter] = useState("all");       // all | rendah | habis | nonaktif
@@ -455,6 +451,11 @@ export default function AdminProducts() {
       {showForm && (
         <div className="fixed inset-0 bg-neutral-900/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
           <form
+            ref={formDialogRef}
+            role="dialog"
+            aria-modal="true"
+            aria-label={editingId ? "Edit Produk" : "Tambah Produk"}
+            tabIndex={-1}
             onSubmit={handleSave}
             className="bg-surface rounded-2xl p-6 w-full max-w-md space-y-3 max-h-[90vh] overflow-y-auto shadow-2xl"
           >
@@ -588,11 +589,11 @@ export default function AdminProducts() {
       {/* Custom Confirm Dialog Hapus */}
       {confirmDelete && (
         <div className="fixed inset-0 bg-neutral-900/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl p-6 w-full max-w-sm shadow-xl">
+          <div ref={deleteDialogRef} role="alertdialog" aria-modal="true" aria-labelledby="del-product-title" tabIndex={-1} className="bg-white rounded-2xl p-6 w-full max-w-sm shadow-xl">
             <div className="w-12 h-12 rounded-full bg-red-100 flex items-center justify-center mx-auto mb-4">
-              <Trash2 size={22} className="text-danger" />
+              <Trash2 size={22} className="text-danger" aria-hidden="true" />
             </div>
-            <h3 className="font-bold text-lg text-neutral-900 text-center mb-2">Hapus Produk?</h3>
+            <h3 id="del-product-title" className="font-bold text-lg text-neutral-900 text-center mb-2">Hapus Produk?</h3>
             <p className="text-sm text-neutral-500 text-center mb-1">
               Yakin hapus <span className="font-semibold text-neutral-800">{confirmDelete.name}</span>?
             </p>

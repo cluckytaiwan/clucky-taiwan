@@ -5,6 +5,7 @@ import { isValidPhoneNumber } from "../utils/validators";
 import { QrCode, Clock, ShoppingBag } from "lucide-react";
 import { supabase } from "../lib/supabaseClient";
 import { loadSnap } from "../utils/loadSnap";
+import { useDialogFocus } from "../hooks/useDialogFocus";
 import { pollOrderStatus } from "../utils/orderStatusApi";
 import { saveCustomerProfile, getCustomerProfile, saveOrderToHistory } from "../utils/storage";
 
@@ -38,19 +39,20 @@ export function clearPendingPayment() {
 
 /* ─── Modal: Snap Ditutup ───────────────────────────────────── */
 function SnapClosedModal({ kode, total, onPayNow, onPayLater }) {
+  const dialogRef = useDialogFocus(true, onPayLater);
   return (
     <div
       className="fixed inset-0 z-[9999] flex items-center justify-center p-4"
       style={{ background: "rgba(0,0,0,0.55)", backdropFilter: "blur(6px)" }}
     >
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden">
+      <div ref={dialogRef} role="alertdialog" aria-modal="true" aria-labelledby="snap-closed-title" tabIndex={-1} className="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden">
         {/* Header orange */}
         <div className="bg-amber-50 border-b border-amber-100 px-6 py-5 flex items-start gap-3">
           <div className="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center shrink-0">
             <Clock size={20} className="text-amber-600" />
           </div>
           <div>
-            <h3 className="font-bold text-neutral-900 text-base">Pembayaran Belum Selesai</h3>
+            <h3 id="snap-closed-title" className="font-bold text-neutral-900 text-base">Pembayaran Belum Selesai</h3>
             <p className="text-sm text-neutral-500 mt-0.5">
               Pesanan <span className="font-semibold text-neutral-700">{kode}</span> sudah tersimpan,
               tapi belum dibayar.

@@ -1,5 +1,6 @@
 // src/components/admin/VariantManager.jsx
 import { useEffect, useState } from "react";
+import { useDialogFocus } from "../../hooks/useDialogFocus";
 import { supabase } from "../../lib/supabaseClient";
 import { formatRupiah } from "../../utils/formatCurrency";
 import { X, Plus, Trash2, Pencil, Check, GripVertical } from "lucide-react";
@@ -26,6 +27,7 @@ export default function VariantManager({ product, onClose }) {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [confirmDelete, setConfirmDelete] = useState(null); // { id, nama }
+  const dialogRef = useDialogFocus(true, onClose);
 
   useEffect(() => {
     fetchVariants();
@@ -129,6 +131,11 @@ export default function VariantManager({ product, onClose }) {
       onClick={onClose}
     >
       <div
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-label={`Kelola varian ${product.name}`}
+        tabIndex={-1}
         className="bg-white rounded-2xl shadow-2xl w-full max-w-lg flex flex-col"
         style={{ maxHeight: "90vh" }}
         onClick={(e) => e.stopPropagation()}
