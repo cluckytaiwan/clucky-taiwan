@@ -15,11 +15,12 @@ const SLIDER_MAX = 100_000; // batas atas slider (bisa diketik lebih)
 const SLIDER_MIN_FALLBACK = 5_000;
 const MAX_BUDGET = 1_000_000; // batas input manual — di atas ini rekomendasi tidak bermakna
 
-// Label per jenis rekomendasi (ditentukan algoritma, bukan urutan tampil)
+// Label per jenis rekomendasi (ditentukan algoritma, bukan urutan tampil).
+// Warna hanya untuk badge; tombol aksi selalu warna utama agar konsisten.
 const KIND_CONFIG = {
-  best:  { label: "Paling Pas",   icon: Star,       color: "text-amber-600 bg-amber-100 border-amber-200",       btnClass: "bg-primary hover:bg-primary-dark" },
-  more:  { label: "Lebih Banyak", icon: TrendingUp, color: "text-violet-700 bg-violet-100 border-violet-200",    btnClass: "bg-violet-600 hover:bg-violet-700" },
-  saver: { label: "Lebih Hemat",  icon: Zap,        color: "text-green-700 bg-green-100 border-green-200", btnClass: "bg-green-600 hover:bg-green-700" },
+  best:  { label: "Paling Pas",   icon: Star,       color: "text-amber-600 bg-amber-100 border-amber-200"  },
+  more:  { label: "Lebih Banyak", icon: TrendingUp, color: "text-violet-700 bg-violet-100 border-violet-200"  },
+  saver: { label: "Lebih Hemat",  icon: Zap,        color: "text-green-700 bg-green-100 border-green-200"  },
 };
 
 // Warna progress bar berdasarkan efisiensi budget
@@ -438,14 +439,14 @@ export default function BudgetRecommender({ products, onCartOpen }) {
                         {isAdded ? (
                           <button
                             onClick={() => handleBuyPackage(combo.items)}
-                            className="w-full flex items-center justify-center gap-2 bg-neutral-500 hover:bg-neutral-600 shadow-inner active:scale-95 text-white font-bold py-3 rounded-xl transition-all text-sm"
+                            className="w-full flex items-center justify-center gap-2 border-2 border-primary bg-white text-primary hover:bg-primary/5 active:scale-95 font-bold py-2.5 rounded-xl transition-all text-sm"
                           >
                             Lihat Keranjang
                           </button>
                         ) : needsVariant ? (
                           <button
                             onClick={() => handleBuyPackage(combo.items)}
-                            className="w-full flex items-center justify-center gap-2 bg-amber-500 hover:bg-amber-600 active:scale-95 text-white font-bold py-3 rounded-xl transition-all text-sm"
+                            className="w-full flex items-center justify-center gap-2 bg-primary hover:bg-primary-dark active:scale-95 text-white font-bold py-3 rounded-xl transition-all text-sm"
                           >
                             Pilih Varian Dulu
                             <ArrowRight size={15} />
@@ -453,7 +454,7 @@ export default function BudgetRecommender({ products, onCartOpen }) {
                         ) : (
                           <button
                             onClick={() => handleBuyPackage(combo.items)}
-                            className={`w-full flex items-center justify-center gap-2 active:scale-95 text-white font-bold py-3 rounded-xl transition-all text-sm ${rank.btnClass}`}
+                            className="w-full flex items-center justify-center gap-2 bg-primary hover:bg-primary-dark active:scale-95 text-white font-bold py-3 rounded-xl transition-all text-sm"
                           >
                             Pesan Sekarang
                           </button>
