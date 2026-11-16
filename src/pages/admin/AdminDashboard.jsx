@@ -319,6 +319,7 @@ export default function AdminDashboard() {
               <button
                 key={opt.key}
                 onClick={() => setPreset(opt.key)}
+                aria-pressed={preset === opt.key}
                 className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
                   preset === opt.key
                     ? "bg-white text-neutral-900 shadow-sm"

@@ -312,6 +312,7 @@ export default function AdminProducts() {
             value={searchQuery}
             onChange={e => setSearchQuery(e.target.value)}
             placeholder="Cari nama produk atau kategori…"
+            aria-label="Cari produk"
             className="w-full pl-9 pr-8 py-2.5 bg-surface border border-neutral-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/60 transition-all"
           />
           {searchQuery && (
@@ -328,6 +329,7 @@ export default function AdminProducts() {
         {/* Filter Kategori */}
         {categories.length > 0 && (
           <select
+            aria-label="Filter kategori"
             value={filterCat}
             onChange={e => setFilterCat(e.target.value)}
             className="border border-neutral-200 rounded-xl px-3 py-2 text-sm text-neutral-700 bg-surface focus:outline-none focus:ring-2 focus:ring-primary/30"
@@ -346,6 +348,7 @@ export default function AdminProducts() {
           <button
             key={opt.key}
             onClick={() => setFilter(opt.key)}
+            aria-pressed={filter === opt.key}
             className={`px-3 py-2 rounded-xl text-xs font-semibold transition-colors border flex items-center gap-1.5 ${
               filter === opt.key
                 ? "bg-primary text-white border-primary shadow-sm"
@@ -573,7 +576,7 @@ export default function AdminProducts() {
               Produk aktif (tampil di katalog)
             </label>
 
-            {error && <p className="text-sm text-danger">{error}</p>}
+            {error && <p role="alert" className="text-sm text-danger">{error}</p>}
 
             <button
               type="submit"

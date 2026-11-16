@@ -179,6 +179,7 @@ export default function AdminSales() {
             <button
               key={f.key}
               onClick={() => setFilterStatus(f.key)}
+              aria-pressed={filterStatus === f.key}
               className={`shrink-0 px-3 py-2 rounded-xl text-xs font-semibold transition-colors border ${
                 filterStatus === f.key
                   ? "bg-primary text-white border-primary shadow-sm"

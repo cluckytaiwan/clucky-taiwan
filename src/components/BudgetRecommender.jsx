@@ -235,6 +235,9 @@ export default function BudgetRecommender({ products, onCartOpen }) {
                 value={inputRaw}
                 onChange={handleInputChange}
                 placeholder="Ketik nominal"
+                aria-label="Nominal budget dalam Rupiah"
+                aria-invalid={inputError ? true : undefined}
+                aria-describedby={inputError ? "budget-error" : undefined}
                 className={`w-full pl-10 pr-4 py-2.5 rounded-xl border text-sm font-semibold font-body outline-none transition-all ${inputError
                   ? "border-danger bg-red-50 focus:ring-1 focus:ring-danger"
                   : "border-neutral-200 bg-white focus:border-primary focus:ring-1 focus:ring-primary"
@@ -261,7 +264,7 @@ export default function BudgetRecommender({ products, onCartOpen }) {
           </div>
 
           {inputError && (
-            <p className="text-xs text-danger mt-2 font-medium">{inputError}</p>
+            <p id="budget-error" role="alert" className="text-xs text-danger mt-2 font-medium">{inputError}</p>
           )}
         </div>
 

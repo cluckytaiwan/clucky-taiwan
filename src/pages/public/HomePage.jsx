@@ -8,6 +8,7 @@ import StoreFooter from "../../components/StoreFooter";
 import { useCartStore } from "../../store/cartStore";
 import { useProducts } from "../../hooks/useProducts";
 import heroImage from "../../assets/hero.jpg";
+import { usePageTitle } from "../../hooks/usePageTitle";
 
 
 export default function HomePage() {
@@ -16,6 +17,7 @@ export default function HomePage() {
   const navigate = useNavigate();
   const { products, loading, error } = useProducts();
   const [activeCategory, setActiveCategory] = useState("Semua");
+  usePageTitle("");
 
   const categories = useMemo(() => {
     const cats = products.map((p) => p.category).filter(Boolean);
@@ -69,6 +71,7 @@ export default function HomePage() {
         </div>
       </header>
 
+      <main>
       {/* ===== HERO SECTION ===== */}
       <section className="relative min-h-[420px] sm:min-h-[600px] flex items-center overflow-hidden bg-neutral-900">
         <img
@@ -130,6 +133,7 @@ export default function HomePage() {
                 <button
                   key={cat}
                   onClick={() => setActiveCategory(cat)}
+                  aria-pressed={activeCategory === cat}
                   className={`px-4 py-2 rounded-full whitespace-nowrap text-sm font-semibold transition-colors ${activeCategory === cat
                       ? "bg-primary text-white shadow-sm"
                       : "bg-neutral-100 text-neutral-600 hover:bg-neutral-200"
@@ -180,6 +184,8 @@ export default function HomePage() {
           </div>
         )}
       </section>
+
+      </main>
 
       <StoreFooter />
 

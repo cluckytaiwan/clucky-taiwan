@@ -331,12 +331,15 @@ export default function CheckoutForm({ onBack, onSuccess, onPayLater }) {
                 <input
                   id="co-name"
                   type="text"
+                  autoComplete="name"
+                  aria-invalid={errors.customer_name ? true : undefined}
+                  aria-describedby={errors.customer_name ? "co-name-error" : undefined}
                   value={form.customer_name}
                   onChange={(e) => setForm({ ...form, customer_name: e.target.value })}
                   className="w-full border border-neutral-200 rounded-xl px-4 py-3 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors text-sm"
                   placeholder="Contoh: Budi Santoso"
                 />
-                {errors.customer_name && <p className="text-xs text-danger mt-1.5">{errors.customer_name}</p>}
+                {errors.customer_name && <p id="co-name-error" role="alert" className="text-xs text-danger mt-1.5">{errors.customer_name}</p>}
               </div>
 
               {/* Nomor HP */}
@@ -347,20 +350,25 @@ export default function CheckoutForm({ onBack, onSuccess, onPayLater }) {
                 <input
                   id="co-phone"
                   type="tel"
+                  inputMode="numeric"
+                  autoComplete="tel"
+                  aria-invalid={errors.customer_phone ? true : undefined}
+                  aria-describedby={errors.customer_phone ? "co-phone-error" : undefined}
                   value={form.customer_phone}
                   onChange={(e) => setForm({ ...form, customer_phone: e.target.value })}
                   className="w-full border border-neutral-200 rounded-xl px-4 py-3 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors text-sm"
                   placeholder="08xxxxxxxxxx"
                 />
-                {errors.customer_phone && <p className="text-xs text-danger mt-1.5">{errors.customer_phone}</p>}
+                {errors.customer_phone && <p id="co-phone-error" role="alert" className="text-xs text-danger mt-1.5">{errors.customer_phone}</p>}
               </div>
 
               {/* Catatan (Opsional) */}
               <div>
-                <label className="flex items-center gap-2 text-sm font-semibold text-neutral-800 mb-2">
-                  Catatan Pesanan <span className="text-neutral-400 font-normal">(Opsional)</span>
+                <label htmlFor="co-notes" className="flex items-center gap-2 text-sm font-semibold text-neutral-800 mb-2">
+                  Catatan Pesanan <span className="text-neutral-500 font-normal">(Opsional)</span>
                 </label>
                 <textarea
+                  id="co-notes"
                   value={form.customer_notes}
                   onChange={(e) => setForm({ ...form, customer_notes: e.target.value })}
                   rows={2}
@@ -404,7 +412,7 @@ export default function CheckoutForm({ onBack, onSuccess, onPayLater }) {
               </div>
 
               {serverError && (
-                <p className="text-sm text-danger bg-red-50 border border-red-200 rounded-lg p-3 mb-4 text-center">
+                <p role="alert" className="text-sm text-danger bg-red-50 border border-red-200 rounded-lg p-3 mb-4 text-center">
                   {serverError}
                 </p>
               )}
