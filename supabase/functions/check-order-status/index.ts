@@ -57,7 +57,7 @@ Deno.serve(async (req) => {
 
     const { data: rawItems } = await supabase
       .from("detail_pesanan")
-      .select("nama_produk, harga_satuan, jumlah, subtotal")
+      .select("nama_produk, harga_satuan, jumlah, subtotal, varian_terpilih")
       .eq("pesanan_id", order.id);
 
     const items = (rawItems || []).map((i) => ({
@@ -65,6 +65,10 @@ Deno.serve(async (req) => {
       price: i.harga_satuan,
       qty: i.jumlah,
       subtotal: i.subtotal,
+      // Label varian dari snapshot saat checkout, mis. "Large · Pedas"
+      variant_label: Array.isArray(i.varian_terpilih)
+        ? i.varian_terpilih.map((v: { nama?: string }) => v?.nama).filter(Boolean).join(" · ")
+        : "",
     }));
 
     return jsonResponse({

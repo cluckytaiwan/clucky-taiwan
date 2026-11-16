@@ -366,8 +366,13 @@ export default function OrderStatusChecker() {
             <div className="space-y-4">
               <p className="text-xs font-bold text-neutral-400 uppercase tracking-wider mb-2">Ringkasan Pembelanjaan</p>
               {result.items.map((item, idx) => (
-                <div key={idx} className="flex justify-between text-base text-neutral-800 items-center">
-                  <span className="font-medium">{item.product_name} <span className="text-neutral-400 ml-1">× {item.qty}</span></span>
+                <div key={idx} className="flex justify-between gap-4 text-base text-neutral-800 items-center">
+                  <span className="font-medium">
+                    {item.product_name} <span className="text-neutral-400 ml-1">× {item.qty}</span>
+                    {item.variant_label && (
+                      <span className="block text-xs font-normal text-neutral-500">{item.variant_label}</span>
+                    )}
+                  </span>
                   <span className="font-bold">{formatRupiah(item.subtotal)}</span>
                 </div>
               ))}
