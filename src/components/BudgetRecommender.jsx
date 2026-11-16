@@ -1,7 +1,7 @@
 // src/components/BudgetRecommender.jsx
 import { useState, useMemo, useCallback, useRef } from "react";
 import { formatRupiah } from "../utils/formatCurrency";
-import { getRecommendations, getMinAvailablePrice } from "../utils/budgetRecommender";
+import { getRecommendations, getMinAvailablePrice, groupComboItems, MAIN_CATEGORIES } from "../utils/budgetRecommender";
 import { useCartStore } from "../store/cartStore";
 import { useVariantModalStore } from "../store/variantModalStore";
 import { getOptimizedImageUrl } from "../utils/imageUrl";
@@ -18,12 +18,12 @@ const SLIDER_MAX = 100_000; // batas atas slider (bisa diketik lebih)
 const SLIDER_MIN_FALLBACK = 5_000;
 const MAX_BUDGET = 1_000_000; // batas input manual — di atas ini rekomendasi tidak bermakna
 
-// Badge terbaik per ranking
-const RANK_CONFIG = [
-  { label: "Pilihan Terbaik", icon: Star, color: "text-amber-600 bg-amber-100 border-amber-200", btnClass: "bg-primary hover:bg-primary-dark" },
-  { label: "Hemat Banget", icon: Zap, color: "text-emerald-700 bg-emerald-100 border-emerald-200", btnClass: "bg-emerald-600 hover:bg-emerald-700" },
-  { label: "Lebih Banyak", icon: TrendingUp, color: "text-violet-700 bg-violet-100 border-violet-200", btnClass: "bg-violet-600 hover:bg-violet-700" },
-];
+// Label per jenis rekomendasi (ditentukan algoritma, bukan urutan tampil)
+const KIND_CONFIG = {
+  best:  { label: "Paling Pas",   icon: Star,       color: "text-amber-600 bg-amber-100 border-amber-200",       btnClass: "bg-primary hover:bg-primary-dark" },
+  more:  { label: "Lebih Banyak", icon: TrendingUp, color: "text-violet-700 bg-violet-100 border-violet-200",    btnClass: "bg-violet-600 hover:bg-violet-700" },
+  saver: { label: "Lebih Hemat",  icon: Zap,        color: "text-emerald-700 bg-emerald-100 border-emerald-200", btnClass: "bg-emerald-600 hover:bg-emerald-700" },
+};
 
 // Warna progress bar berdasarkan efisiensi budget
 function getEfficiencyColor(efficiency) {
@@ -67,6 +67,14 @@ export default function BudgetRecommender({ products, onCartOpen }) {
     return getRecommendations(products, budget);
   }, [budget, products, minPrice]);
 
+  // Harga menu utama termurah — untuk menjelaskan kenapa yang muncul hanya camilan
+  const minMainPrice = useMemo(() => {
+    const prices = products
+      .filter((p) => p.is_active && p.stock > 0 && MAIN_CATEGORIES.includes(p.category))
+      .map((p) => p.min_price ?? p.price);
+    return prices.length ? Math.min(...prices) : null;
+  }, [products]);
+
   // ── Fill persen slider ────────────────────────────────────────────────────
   const sliderFillPercent = useMemo(
     () => Math.round(((Math.min(budget, maxPrice) - minPrice) / (maxPrice - minPrice)) * 100),
@@ -96,6 +104,10 @@ export default function BudgetRecommender({ products, onCartOpen }) {
     if (num > 0) {
       setBudget(num);
       if (!hasSearched) setHasSearched(true);
+    } else {
+      // Kolom dikosongkan → reset, jangan diam-diam memakai budget lama
+      setBudget(0);
+      setHasSearched(false);
     }
   }, [hasSearched]);
 
@@ -289,6 +301,7 @@ export default function BudgetRecommender({ products, onCartOpen }) {
                 <p className="text-xs font-bold text-neutral-400 uppercase tracking-widest">
                   {recommendations.length} Rekomendasi untuk {formatRupiah(budget)}
                 </p>
+                {recommendations.length > 1 && (
                 <div className="flex gap-2">
                   <button
                     type="button"
@@ -307,7 +320,14 @@ export default function BudgetRecommender({ products, onCartOpen }) {
                     <ChevronRight size={16} />
                   </button>
                 </div>
+                )}
               </div>
+
+              {recommendations[0]?.isSnackOnly && minMainPrice && (
+                <p className="mb-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-2.5 text-sm text-amber-800">
+                  Menu ayam mulai {formatRupiah(minMainPrice)}. Dengan budget ini, berikut pilihan camilan &amp; minuman.
+                </p>
+              )}
 
               <div className="relative">
                 <div
@@ -315,7 +335,7 @@ export default function BudgetRecommender({ products, onCartOpen }) {
                   className="flex gap-4 overflow-x-auto scroll-smooth snap-x snap-mandatory scrollbar-hide -mx-6 px-6 pb-4 sm:-mx-10 sm:px-10"
                 >
                   {recommendations.map((combo, idx) => {
-                    const rank = RANK_CONFIG[idx] ?? RANK_CONFIG[2];
+                    const rank = KIND_CONFIG[combo.kind] ?? KIND_CONFIG.best;
                     const RankIcon = rank.icon;
                     const needsVariant = comboNeedsVariant(combo.items);
                     const efficiency = Math.round((combo.totalPrice / budget) * 100);
@@ -329,7 +349,7 @@ export default function BudgetRecommender({ products, onCartOpen }) {
                       {/* Card header dengan badge ranking */}
                       <div className="px-4 pt-4 pb-3 border-b border-neutral-50">
                         <div className="flex items-center justify-between mb-1">
-                          <span className={`inline-flex items-center gap-1.5 text-[11px] font-bold px-2.5 py-1 rounded-full border ${rank.color} ${idx === 0 ? "badge-best" : ""}`}>
+                          <span className={`inline-flex items-center gap-1.5 text-[11px] font-bold px-2.5 py-1 rounded-full border ${rank.color} ${combo.kind === "best" ? "badge-best" : ""}`}>
                             <RankIcon size={10} />
                             {rank.label}
                           </span>
@@ -349,8 +369,8 @@ export default function BudgetRecommender({ products, onCartOpen }) {
 
                       {/* Daftar item */}
                       <div className="px-4 py-3 flex-1 space-y-3">
-                        {combo.items.map((item, i) => (
-                          <div key={i} className="flex items-center gap-3">
+                        {groupComboItems(combo.items).map(({ product: item, qty }) => (
+                          <div key={item.id} className="flex items-center gap-3">
                             {/* Thumbnail produk */}
                             {item.image_url ? (
                               <img
@@ -365,9 +385,14 @@ export default function BudgetRecommender({ products, onCartOpen }) {
                               </div>
                             )}
                             <div className="flex-1 min-w-0">
-                              <p className="text-sm font-semibold text-neutral-800 truncate">{item.name}</p>
+                              <p className="text-sm font-semibold text-neutral-800 truncate">
+                                {qty > 1 && <span className="text-primary">{qty}× </span>}
+                                {item.name}
+                              </p>
                               <div className="flex items-center gap-1.5">
-                                <p className="text-xs text-primary font-bold">{formatRupiah(item.price)}</p>
+                                <p className="text-xs text-primary font-bold">
+                                  {formatRupiah((item.min_price ?? item.price) * qty)}
+                                </p>
                                 {item.has_variants && (
                                   <span className="text-[10px] text-amber-500 font-semibold">+varian</span>
                                 )}
@@ -410,7 +435,7 @@ export default function BudgetRecommender({ products, onCartOpen }) {
                           </div>
                           {combo.leftover > 0 && !combo.isEstimate && (
                             <div className="text-right">
-                              <p className="text-[11px] text-neutral-400 mb-0.5">Kembalian</p>
+                              <p className="text-[11px] text-neutral-400 mb-0.5">Sisa budget</p>
                               <p className="text-sm font-bold text-success">{formatRupiah(combo.leftover)}</p>
                             </div>
                           )}
