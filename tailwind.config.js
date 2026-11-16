@@ -15,7 +15,9 @@ export default {
         },
         background: "#FFF8F1",
         surface: "#FFFFFF",
-        success: "#4B7A57",
+        // Sama dengan green-700 Tailwind agar satu keluarga dengan badge/tint green-*
+        // (sebelumnya #4B7A57, hijau kusam yang berbeda dari badge "Lunas").
+        success: "#15803D",
         danger: "#B01F2E",
       },
       fontFamily: {

@@ -2,6 +2,12 @@
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  /* Dipakai CSS non-Tailwind (mis. BudgetRecommender.css: slider, glow badge).
+     Samakan dengan theme.colors.primary di tailwind.config.js. */
+  --color-primary: #D6293B;
+}
+
 html {
   scroll-behavior: smooth;
 }

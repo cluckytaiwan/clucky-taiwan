@@ -10,7 +10,7 @@ import toast from "react-hot-toast";
 // Badge status stok — hanya tampil saat ada urgensi (habis / stok menipis)
 function getStockBadge(product) {
   if (product.stock <= 0) return null; // stok habis sudah ditandai overlay "Stok Habis"
-  if (product.stock <= 5) return { label: "Stok Terbatas", className: "bg-secondary text-neutral-900" };
+  if (product.stock <= 5) return { label: "Stok Terbatas", className: "bg-amber-100 text-amber-800" };
   return null;
 }
 

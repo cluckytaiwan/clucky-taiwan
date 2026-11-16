@@ -18,9 +18,9 @@ const MAX_BUDGET = 1_000_000; // batas input manual — di atas ini rekomendasi 
 // Label per jenis rekomendasi (ditentukan algoritma, bukan urutan tampil).
 // Warna hanya untuk badge; tombol aksi selalu warna utama agar konsisten.
 const KIND_CONFIG = {
-  best:  { label: "Paling Pas",   icon: Star,       color: "text-amber-600 bg-amber-100 border-amber-200"  },
-  more:  { label: "Lebih Banyak", icon: TrendingUp, color: "text-violet-700 bg-violet-100 border-violet-200"  },
-  saver: { label: "Lebih Hemat",  icon: Zap,        color: "text-green-700 bg-green-100 border-green-200"  },
+  best:  { label: "Paling Pas",   icon: Star,       color: "text-primary-dark bg-primary/10 border-primary/20"  },
+  more:  { label: "Lebih Banyak", icon: TrendingUp, color: "text-neutral-900 bg-secondary-light border-secondary/40"  },
+  saver: { label: "Lebih Hemat",  icon: Zap,        color: "text-green-800 bg-green-100 border-green-200"  },
 };
 
 // Warna progress bar berdasarkan efisiensi budget
