@@ -4,6 +4,7 @@
 import { useEffect, useState } from "react";
 import { CheckCheck, ChevronDown, ChevronUp, Loader2, MessageCircle, Search, X, StickyNote } from "lucide-react";
 import toast from "react-hot-toast";
+import { useDialogFocus } from "../../hooks/useDialogFocus";
 import { formatRupiah } from "../../utils/formatCurrency";
 import FulfillmentAction from "../../components/admin/FulfillmentAction";
 import OrderDetailModal from "../../components/admin/OrderDetailModal";
@@ -80,6 +81,7 @@ export default function AdminSales() {
   const [loadingId,     setLoadingId]     = useState(null);
   const [confirmCleanup, setConfirmCleanup] = useState(false);
   const [cleaning,      setCleaning]      = useState(false);
+  const cleanupDialogRef = useDialogFocus(confirmCleanup, () => setConfirmCleanup(false));
 
   useEffect(() => { fetchCounts(); }, [fetchCounts]);
 
@@ -177,6 +179,7 @@ export default function AdminSales() {
             <button
               key={f.key}
               onClick={() => setFilterStatus(f.key)}
+              aria-pressed={filterStatus === f.key}
               className={`shrink-0 px-3 py-2 rounded-xl text-xs font-semibold transition-colors border ${
                 filterStatus === f.key
                   ? "bg-primary text-white border-primary shadow-sm"
@@ -368,7 +371,7 @@ export default function AdminSales() {
 
       {confirmCleanup && (
         <div className="fixed inset-0 bg-neutral-900/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div role="dialog" aria-modal="true" aria-labelledby="cleanup-title" className="bg-white rounded-2xl p-6 w-full max-w-sm shadow-xl">
+          <div ref={cleanupDialogRef} tabIndex={-1} role="alertdialog" aria-modal="true" aria-labelledby="cleanup-title" className="bg-white rounded-2xl p-6 w-full max-w-sm shadow-xl">
             <h3 id="cleanup-title" className="font-bold text-lg text-neutral-900 mb-2">Selesaikan pesanan lama?</h3>
             <p className="text-sm text-neutral-600 mb-5">
               Semua pesanan lunas yang dibuat lebih dari 24 jam lalu dan belum berstatus Selesai

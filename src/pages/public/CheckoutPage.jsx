@@ -5,6 +5,7 @@ import CheckoutForm, { getPendingPayment, clearPendingPayment } from "../../comp
 import { CheckCircle2, Clock, X, Copy, Check, QrCode } from "lucide-react";
 import { formatRupiah } from "../../utils/formatCurrency";
 import { loadSnap } from "../../utils/loadSnap";
+import { usePageTitle } from "../../hooks/usePageTitle";
 
 /* ─── Banner Pesanan Pending ────────────────────────────────── */
 function PendingPaymentBanner({ pending, onPayNow, onDismiss }) {
@@ -52,6 +53,7 @@ export default function CheckoutPage() {
   // { kode, paid } — paid=false berarti Midtrans melaporkan pending (belum dibayar)
   const [completed, setCompleted] = useState(null);
   const [copied, setCopied] = useState(false);
+  usePageTitle(completed ? (completed.paid ? "Pembayaran Berhasil" : "Menunggu Pembayaran") : "Checkout");
   const [pendingPayment, setPendingPayment] = useState(null);
 
   useEffect(() => {
@@ -109,8 +111,8 @@ export default function CheckoutPage() {
   if (completed) {
     const { kode, paid } = completed;
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center px-4">
-        <div className="max-w-sm text-center">
+      <main className="min-h-screen bg-background flex items-center justify-center px-4">
+        <div className="max-w-sm text-center" role="status">
           {paid ? (
             <CheckCircle2 className="mx-auto text-success" size={64} />
           ) : (
@@ -150,12 +152,13 @@ export default function CheckoutPage() {
             Kembali ke Beranda
           </button>
         </div>
-      </div>
+      </main>
     );
   }
 
   return (
-    <div className="min-h-screen bg-background py-8">
+    <main className="min-h-screen bg-background py-8">
+      <h1 className="sr-only">Checkout</h1>
       <PendingPaymentBanner
         pending={pendingPayment}
         onPayNow={handlePayNow}
@@ -169,6 +172,6 @@ export default function CheckoutPage() {
         }}
         onPayLater={() => navigate("/cek-pesanan")}
       />
-    </div>
+    </main>
   );
 }

@@ -1,17 +1,12 @@
 // src/components/admin/OrderDetailModal.jsx
-import { useEffect } from "react";
+import { useDialogFocus } from "../../hooks/useDialogFocus";
 import { X, MessageCircle, MapPin, StickyNote } from "lucide-react";
 import { formatRupiah } from "../../utils/formatCurrency";
 import FulfillmentDropdown from "./FulfillmentDropdown";
 import { PAYMENT_STATUS, formatOrderCode, formatOrderDate, customerWaLink } from "../../constants/adminOrder";
 
 export default function OrderDetailModal({ order, onClose, onUpdate, loadingId }) {
-  // Esc menutup modal
-  useEffect(() => {
-    const onKey = (e) => { if (e.key === "Escape") onClose(); };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [onClose]);
+  const dialogRef = useDialogFocus(true, onClose);
 
   if (!order) return null;
   const kode    = formatOrderCode(order);
@@ -26,6 +21,8 @@ export default function OrderDetailModal({ order, onClose, onUpdate, loadingId }
       onClick={onClose}
     >
       <div
+        ref={dialogRef}
+        tabIndex={-1}
         role="dialog"
         aria-modal="true"
         aria-label={`Detail pesanan ${kode}`}

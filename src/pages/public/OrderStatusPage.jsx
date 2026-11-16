@@ -2,9 +2,11 @@
 import { useNavigate } from "react-router-dom";
 import OrderStatusChecker from "../../components/OrderStatusChecker";
 import StoreFooter from "../../components/StoreFooter";
+import { usePageTitle } from "../../hooks/usePageTitle";
 
 export default function OrderStatusPage() {
   const navigate = useNavigate();
+  usePageTitle("Pesanan Saya");
 
   return (
     <div className="min-h-screen bg-background pt-8 flex flex-col">
@@ -14,9 +16,10 @@ export default function OrderStatusPage() {
       >
         &larr; Kembali ke Beranda
       </button>
-      <div className="flex-1">
+      <main className="flex-1">
+        <h1 className="mx-auto max-w-3xl px-4 sm:px-8 font-display text-2xl font-bold text-neutral-900">Pesanan Saya</h1>
         <OrderStatusChecker />
-      </div>
+      </main>
       <StoreFooter />
     </div>
   );

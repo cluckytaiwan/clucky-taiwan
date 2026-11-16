@@ -7,6 +7,7 @@ import { useVariantModalStore } from "../store/variantModalStore";
 import { formatRupiah } from "../utils/formatCurrency";
 import { getOptimizedImageUrl } from "../utils/imageUrl";
 import toast from "react-hot-toast";
+import { useDialogFocus } from "../hooks/useDialogFocus";
 
 // Custom hook untuk mendeteksi layar desktop (Tailwind 'sm' breakpoint: 640px)
 function useMediaQuery(query) {
@@ -176,13 +177,8 @@ export default function VariantBottomSheet() {
     closeModal();
   }
 
-  // Tutup modal desktop dengan tombol Esc (drawer HP sudah ditangani vaul)
-  useEffect(() => {
-    if (!isOpen || !isDesktop) return;
-    const onKey = (e) => { if (e.key === "Escape") closeModal(); };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [isOpen, isDesktop, closeModal]);
+  // Fokus terkunci di modal desktop + Esc menutup (drawer HP ditangani vaul)
+  const desktopDialogRef = useDialogFocus(isOpen && isDesktop && !loading, closeModal);
 
   // Komponen isi modal yang akan di-render baik di Desktop Modal maupun Mobile Drawer
   const renderContent = () => {
@@ -335,6 +331,8 @@ export default function VariantBottomSheet() {
     return (
       <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
         <div 
+          ref={desktopDialogRef}
+          tabIndex={-1}
           role="dialog"
           aria-modal="true"
           aria-label={product ? `Pilih varian ${product.name}` : "Pilih varian"}
@@ -357,7 +355,11 @@ export default function VariantBottomSheet() {
         <Drawer.Overlay className="fixed inset-0 z-[100] bg-black/50 backdrop-blur-sm" />
         <Drawer.Content className="fixed inset-x-0 bottom-0 z-[100] flex max-h-[90vh] flex-col rounded-t-2xl bg-white shadow-xl outline-none">
           {/* Handle for Drawer */}
-          <div className="mx-auto mt-4 h-1.5 w-12 rounded-full bg-neutral-300" />
+          <Drawer.Title className="sr-only">
+            {product ? `Pilih varian ${product.name}` : "Pilih varian"}
+          </Drawer.Title>
+          <Drawer.Description className="sr-only">Pilih varian lalu tambahkan ke keranjang.</Drawer.Description>
+          <div aria-hidden="true" className="mx-auto mt-4 h-1.5 w-12 rounded-full bg-neutral-300" />
           
           {renderContent()}
         </Drawer.Content>
