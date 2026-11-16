@@ -25,7 +25,7 @@ const AdminLayout = lazy(() => import("./layouts/AdminLayout"));
 
 function AdminFallback() {
   return (
-    <div className="flex min-h-screen items-center justify-center font-body text-neutral-500">
+    <div className="flex min-h-dvh items-center justify-center font-body text-neutral-500">
       Memuat...
     </div>
   );
@@ -44,7 +44,7 @@ export default function App() {
             color: '#fff',
           },
         }}
-        containerStyle={{ top: 16, right: 16 }}
+        containerStyle={{ bottom: "calc(5.5rem + env(safe-area-inset-bottom))" }}
       />
       <VariantBottomSheet />
       <AdminAuthProvider>

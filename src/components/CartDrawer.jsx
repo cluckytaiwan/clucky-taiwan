@@ -1,7 +1,8 @@
 // src/components/CartDrawer.jsx
 import { useEffect, useState } from "react";
 import { Drawer } from "vaul";
-import { X, Trash2, Minus, Plus, ShoppingBag } from "lucide-react";
+import { X, ShoppingBag } from "lucide-react";
+import QtyStepper from "./QtyStepper";
 import { useCartStore } from "../store/cartStore";
 import { formatRupiah } from "../utils/formatCurrency";
 
@@ -41,7 +42,7 @@ export default function CartDrawer({ isOpen, onClose, onCheckout }) {
       <Drawer.Portal>
         <Drawer.Overlay className="fixed inset-0 z-40 bg-neutral-900/50" />
         <Drawer.Content className="fixed inset-y-0 right-0 z-50 flex w-full max-w-sm flex-col bg-background shadow-xl outline-none">
-          <div className="flex items-center justify-between border-b border-neutral-200 p-4">
+          <div className="flex items-center justify-between border-b border-neutral-200 py-2 pl-4 pr-2">
             <Drawer.Title className="font-display text-lg font-bold text-neutral-900">
               Keranjang Saya
             </Drawer.Title>
@@ -49,7 +50,7 @@ export default function CartDrawer({ isOpen, onClose, onCheckout }) {
             {items.length > 0 && (
               <button
                 onClick={handleClearAll}
-                className="rounded-lg px-2 py-1 font-body text-sm font-medium text-danger hover:bg-red-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                className="flex h-11 items-center rounded-lg px-3 font-body text-sm font-medium text-danger hover:bg-red-50 active:bg-red-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
               >
                 Kosongkan
               </button>
@@ -57,7 +58,7 @@ export default function CartDrawer({ isOpen, onClose, onCheckout }) {
             <button
               onClick={() => handleOpenChange(false)}
               aria-label="Tutup keranjang"
-              className="rounded-full p-1 text-neutral-900 hover:bg-neutral-200/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+              className="flex h-11 w-11 items-center justify-center rounded-full text-neutral-900 hover:bg-neutral-200/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
             >
               <X size={20} />
             </button>
@@ -108,36 +109,15 @@ export default function CartDrawer({ isOpen, onClose, onCheckout }) {
                     <p className="font-body text-sm font-medium text-neutral-900 truncate">{item.name}</p>
                     {/* Label varian: "Large · Pedas Level 2" */}
                     {item.variant_label && (
-                      <p className="font-body text-xs text-neutral-400 mt-0.5 truncate">
+                      <p className="font-body text-xs text-neutral-500 mt-0.5 truncate">
                         {item.variant_label}
                       </p>
                     )}
                     <p className="font-body text-sm font-semibold tabular-nums text-primary mt-0.5">
                       {formatRupiah(item.price)}
                     </p>
-                    <div className="mt-1.5 flex items-center gap-2">
-                      <button
-                        onClick={() => updateQty(item.cart_key, item.qty - 1)}
-                        className="rounded border border-neutral-200 p-1 hover:bg-neutral-200/50"
-                        aria-label="Kurangi"
-                      >
-                        <Minus size={12} />
-                      </button>
-                      <span className="w-6 text-center font-body text-sm tabular-nums">{item.qty}</span>
-                      <button
-                        onClick={() => updateQty(item.cart_key, item.qty + 1)}
-                        className="rounded border border-neutral-200 p-1 hover:bg-neutral-200/50"
-                        aria-label="Tambah"
-                      >
-                        <Plus size={12} />
-                      </button>
-                      <button
-                        onClick={() => removeItem(item.cart_key)}
-                        className="ml-auto text-danger hover:opacity-70"
-                        aria-label="Hapus item"
-                      >
-                        <Trash2 size={16} />
-                      </button>
+                    <div className="mt-1">
+                      <QtyStepper item={item} onChange={updateQty} onRemove={removeItem} />
                     </div>
                   </div>
                 </div>
@@ -146,14 +126,14 @@ export default function CartDrawer({ isOpen, onClose, onCheckout }) {
           </div>
 
           {items.length > 0 && (
-            <div className="border-t border-dashed border-neutral-200 p-4">
+            <div className="border-t border-dashed border-neutral-200 px-4 pt-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
               <div className="mb-3 flex justify-between font-body font-bold">
                 <span className="text-neutral-900">Total</span>
                 <span className="tabular-nums text-primary">{formatRupiah(getTotal())}</span>
               </div>
               <button
                 onClick={onCheckout}
-                className="w-full rounded-xl bg-primary py-3 font-body font-semibold text-white transition-colors hover:bg-primary-dark focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+                className="h-12 w-full rounded-xl bg-primary font-body font-semibold text-white transition-colors hover:bg-primary-dark active:bg-primary-dark focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
               >
                 Checkout
               </button>

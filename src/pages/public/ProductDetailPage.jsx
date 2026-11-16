@@ -190,11 +190,11 @@ export default function ProductDetailPage() {
   const tipeLabel = { ukuran: "Ukuran", rasa: "Rasa" };
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
+    <div className="min-h-dvh bg-background flex flex-col">
       {/* HEADER */}
       <header className="sticky top-0 z-30 border-b border-neutral-200 bg-background/95 backdrop-blur">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 sm:px-6 lg:px-8">
-          <Link to="/" className="flex items-center gap-2 font-display text-xl font-extrabold tracking-tight text-primary transition-opacity hover:opacity-80">
+          <Link to="/" className="flex min-h-[44px] items-center gap-2 font-display text-xl font-extrabold tracking-tight text-primary transition-opacity hover:opacity-80">
             <ArrowLeft size={20} className="text-neutral-600" />
             <span>Clucky<span className="text-secondary">Taiwan</span></span>
           </Link>
@@ -246,7 +246,7 @@ export default function ProductDetailPage() {
       )}
 
       {/* CONTENT */}
-      <main className="flex-1 w-full max-w-7xl mx-auto px-4 py-8 sm:px-6 lg:px-8 lg:py-12">
+      <main className="flex-1 w-full max-w-7xl mx-auto px-4 py-8 pb-32 sm:px-6 sm:pb-8 lg:px-8 lg:py-12">
         {loading ? (
           <div className="flex justify-center py-20">
             <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-primary"></div>
@@ -384,7 +384,8 @@ export default function ProductDetailPage() {
                   </p>
                 )}
 
-                <div className="flex flex-col sm:flex-row gap-4">
+                {/* HP: menempel di bawah layar agar tombol utama selalu terlihat; sm+: baris biasa */}
+                <div className="fixed inset-x-0 bottom-0 z-20 flex flex-row items-center gap-2 border-t border-neutral-200 bg-surface/95 px-3 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] backdrop-blur sm:static sm:z-auto sm:gap-4 sm:border-0 sm:bg-transparent sm:p-0 sm:backdrop-blur-none">
                   {/* Qty Stepper */}
                   <div className="flex items-center rounded-xl border-2 border-neutral-200 bg-neutral-50 shrink-0">
                     <button
@@ -392,11 +393,11 @@ export default function ProductDetailPage() {
                       aria-label="Kurangi jumlah"
                       onClick={() => setQty((q) => Math.max(1, q - 1))}
                       disabled={!canAdd}
-                      className="flex h-12 w-12 items-center justify-center text-neutral-600 hover:text-neutral-900 disabled:opacity-50"
+                      className="flex h-12 w-11 items-center justify-center text-neutral-600 hover:text-neutral-900 disabled:opacity-50 sm:w-12"
                     >
                       <Minus size={18} />
                     </button>
-                    <span aria-live="polite" aria-label={`Jumlah ${qty}`} className="w-10 text-center font-body text-base font-semibold tabular-nums text-neutral-900">
+                    <span aria-live="polite" aria-label={`Jumlah ${qty}`} className="w-8 text-center font-body text-base font-semibold tabular-nums text-neutral-900 sm:w-10">
                       {qty}
                     </span>
                     <button
@@ -404,7 +405,7 @@ export default function ProductDetailPage() {
                       aria-label="Tambah jumlah"
                       onClick={() => setQty((q) => Math.min(product.stock, q + 1))}
                       disabled={!canAdd}
-                      className="flex h-12 w-12 items-center justify-center text-neutral-600 hover:text-neutral-900 disabled:opacity-50"
+                      className="flex h-12 w-11 items-center justify-center text-neutral-600 hover:text-neutral-900 disabled:opacity-50 sm:w-12"
                     >
                       <Plus size={18} />
                     </button>
@@ -415,7 +416,7 @@ export default function ProductDetailPage() {
                     type="button"
                     onClick={handleAdd}
                     disabled={!canAdd}
-                    className={`flex-1 flex h-12 items-center justify-center gap-2 rounded-xl font-body text-base font-bold text-white transition-all disabled:opacity-50 disabled:cursor-not-allowed ${
+                    className={`min-w-0 flex-1 flex h-12 items-center justify-center gap-2 whitespace-nowrap rounded-xl font-body text-sm font-bold text-white sm:text-base transition-all disabled:opacity-50 disabled:cursor-not-allowed ${
                       addedFeedback
                         ? "bg-green-500"
                         : "bg-primary hover:bg-primary-dark"
@@ -428,8 +429,10 @@ export default function ProductDetailPage() {
                       </>
                     ) : (
                       <>
-                        <ShoppingBag size={18} />
-                        Tambah ke Keranjang — {formatRupiah(finalPrice)}
+                        <ShoppingBag size={18} className="hidden sm:block" />
+                        <span className="sm:hidden">Tambah</span>
+                        <span className="hidden sm:inline">Tambah ke Keranjang</span>
+                        <span aria-hidden="true">—</span> {formatRupiah(finalPrice)}
                       </>
                     )}
                   </button>

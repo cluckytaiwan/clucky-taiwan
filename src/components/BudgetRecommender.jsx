@@ -305,7 +305,7 @@ export default function BudgetRecommender({ products, onCartOpen }) {
                     type="button"
                     onClick={() => scrollSlider(-1)}
                     aria-label="Rekomendasi sebelumnya"
-                    className="flex h-9 w-9 items-center justify-center rounded-full border border-neutral-200 bg-white text-neutral-600 transition-colors hover:border-primary hover:text-primary"
+                    className="flex h-11 w-11 items-center justify-center rounded-full border border-neutral-200 bg-white text-neutral-600 transition-colors hover:border-primary hover:text-primary"
                   >
                     <ChevronLeft size={16} />
                   </button>
@@ -313,7 +313,7 @@ export default function BudgetRecommender({ products, onCartOpen }) {
                     type="button"
                     onClick={() => scrollSlider(1)}
                     aria-label="Rekomendasi selanjutnya"
-                    className="flex h-9 w-9 items-center justify-center rounded-full border border-neutral-200 bg-white text-neutral-600 transition-colors hover:border-primary hover:text-primary"
+                    className="flex h-11 w-11 items-center justify-center rounded-full border border-neutral-200 bg-white text-neutral-600 transition-colors hover:border-primary hover:text-primary"
                   >
                     <ChevronRight size={16} />
                   </button>

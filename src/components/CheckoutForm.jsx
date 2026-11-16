@@ -5,6 +5,7 @@ import { isValidPhoneNumber } from "../utils/validators";
 import { QrCode, Clock, ShoppingBag } from "lucide-react";
 import { supabase } from "../lib/supabaseClient";
 import { loadSnap } from "../utils/loadSnap";
+import QtyStepper from "./QtyStepper";
 import { useDialogFocus } from "../hooks/useDialogFocus";
 import { pollOrderStatus } from "../utils/orderStatusApi";
 import { saveCustomerProfile, getCustomerProfile, saveOrderToHistory } from "../utils/storage";
@@ -95,7 +96,7 @@ function SnapClosedModal({ kode, total, onPayNow, onPayLater }) {
 
 /* ─── Main Component ────────────────────────────────────────── */
 export default function CheckoutForm({ onBack, onSuccess, onPayLater }) {
-  const { items, getTotal, clearCart } = useCartStore();
+  const { items, getTotal, clearCart, updateQty, removeItem } = useCartStore();
   const [form, setForm] = useState(() => {
     const saved = getCustomerProfile();
     return saved || initialForm;
@@ -309,17 +310,46 @@ export default function CheckoutForm({ onBack, onSuccess, onPayLater }) {
         />
       )}
 
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-        <button onClick={onBack} className="text-sm text-neutral-500 mb-6 font-body hover:text-neutral-900 transition-colors">
+      <div className="max-w-6xl mx-auto px-4 pb-28 sm:px-6 lg:px-8 lg:pb-0">
+        <button onClick={onBack} className="-ml-2 mb-4 inline-flex h-11 items-center px-2 text-sm text-neutral-600 font-body hover:text-neutral-900 transition-colors">
           &larr; Kembali ke keranjang
         </button>
 
         <form onSubmit={handleSubmit} className="flex flex-col lg:flex-row gap-8 lg:gap-12">
           {/* KOLOM KIRI: Data Pelanggan */}
           <div className="flex-1 space-y-6">
+            {/* HP: ringkasan ringkas di atas, bisa dibuka untuk mengubah jumlah */}
+            <details className="group rounded-2xl border border-neutral-200 bg-white lg:hidden">
+              <summary className="flex min-h-[56px] cursor-pointer list-none items-center justify-between gap-3 px-4 py-3 [&::-webkit-details-marker]:hidden">
+                <span className="font-body text-sm font-semibold text-neutral-900">
+                  Pesananmu · {items.reduce((n, i) => n + i.qty, 0)} item
+                </span>
+                <span className="flex items-center gap-2 font-body text-sm font-bold tabular-nums text-primary">
+                  {formatRupiah(getTotal())}
+                  <span aria-hidden="true" className="text-neutral-500 transition-transform group-open:rotate-180">▾</span>
+                </span>
+              </summary>
+              <ul className="divide-y divide-neutral-100 border-t border-neutral-100 px-4">
+                {items.map((item) => (
+                  <li key={item.cart_key} className="py-3">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <p className="font-body text-sm font-semibold text-neutral-800">{item.name}</p>
+                        {item.variant_label && <p className="font-body text-xs text-neutral-500">{item.variant_label}</p>}
+                      </div>
+                      <p className="shrink-0 font-body text-sm font-bold tabular-nums text-neutral-900">{formatRupiah(item.price * item.qty)}</p>
+                    </div>
+                    <div className="mt-2">
+                      <QtyStepper item={item} onChange={updateQty} onRemove={removeItem} />
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            </details>
+
             <div>
               <h2 className="text-2xl font-bold font-display text-neutral-900 mb-1">Data Pelanggan</h2>
-              <p className="text-sm text-neutral-500 font-body">Isi data diri Anda</p>
+              <p className="text-sm text-neutral-500 font-body">Isi data dirimu untuk pesanan ini</p>
             </div>
 
             <div className="space-y-5">
@@ -332,6 +362,8 @@ export default function CheckoutForm({ onBack, onSuccess, onPayLater }) {
                   id="co-name"
                   type="text"
                   autoComplete="name"
+                  autoCapitalize="words"
+                  enterKeyHint="next"
                   aria-invalid={errors.customer_name ? true : undefined}
                   aria-describedby={errors.customer_name ? "co-name-error" : undefined}
                   value={form.customer_name}
@@ -352,6 +384,7 @@ export default function CheckoutForm({ onBack, onSuccess, onPayLater }) {
                   type="tel"
                   inputMode="numeric"
                   autoComplete="tel"
+                  enterKeyHint="next"
                   aria-invalid={errors.customer_phone ? true : undefined}
                   aria-describedby={errors.customer_phone ? "co-phone-error" : undefined}
                   value={form.customer_phone}
@@ -369,6 +402,7 @@ export default function CheckoutForm({ onBack, onSuccess, onPayLater }) {
                 </label>
                 <textarea
                   id="co-notes"
+                  autoCapitalize="sentences"
                   value={form.customer_notes}
                   onChange={(e) => setForm({ ...form, customer_notes: e.target.value })}
                   rows={2}
@@ -380,14 +414,21 @@ export default function CheckoutForm({ onBack, onSuccess, onPayLater }) {
             </div>
           </div>
 
-          {/* KOLOM KANAN: Ringkasan Belanja */}
-          <div className="w-full lg:w-[420px]">
+          {/* Error server untuk HP (di desktop ada di kartu ringkasan) */}
+          {serverError && (
+            <p role="alert" className="rounded-lg border border-red-200 bg-red-50 p-3 text-center text-sm text-danger lg:hidden">
+              {serverError}
+            </p>
+          )}
+
+          {/* KOLOM KANAN: Ringkasan Belanja (desktop) */}
+          <div className="hidden w-full lg:block lg:w-[420px]">
             <div className="bg-white border border-neutral-200 rounded-2xl p-6 shadow-sm sticky top-24">
               <h3 className="text-lg font-bold font-display text-neutral-900 mb-6">Ringkasan Belanja</h3>
 
-              <div className="space-y-4 max-h-[40vh] overflow-y-auto pr-2 mb-6">
+              <div className="space-y-4 max-h-[40dvh] overflow-y-auto pr-2 mb-6">
                 {items.map((item) => (
-                  <div key={item.product_id} className="flex justify-between items-start">
+                  <div key={item.cart_key} className="flex justify-between items-start">
                     <div>
                       <p className="text-sm font-semibold text-neutral-800">{item.name}</p>
                       <p className="text-xs text-neutral-500 mt-0.5">
@@ -429,6 +470,22 @@ export default function CheckoutForm({ onBack, onSuccess, onPayLater }) {
                 Pembayaran aman • Data terenkripsi
               </p>
             </div>
+          </div>
+          {/* HP: bar bawah menempel — total + tombol bayar selalu terlihat.
+              Disembunyikan saat keyboard terbuka (lihat .mobile-bar di index.css). */}
+          <div className="mobile-bar fixed inset-x-0 bottom-0 z-20 flex items-center gap-3 border-t border-neutral-200 bg-white/95 px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] backdrop-blur lg:hidden">
+            <div className="shrink-0">
+              <p className="font-body text-xs text-neutral-500">Total</p>
+              <p className="font-body text-lg font-bold tabular-nums text-neutral-900">{formatRupiah(getTotal())}</p>
+            </div>
+            <button
+              type="submit"
+              disabled={loading}
+              className="flex h-12 flex-1 items-center justify-center gap-2 rounded-xl bg-primary font-body font-bold text-white transition-colors hover:bg-primary-dark active:bg-primary-dark disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+            >
+              <QrCode size={20} aria-hidden="true" />
+              {loading ? "Memproses..." : "Bayar Sekarang"}
+            </button>
           </div>
         </form>
       </div>

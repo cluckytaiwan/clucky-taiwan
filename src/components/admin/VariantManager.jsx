@@ -137,7 +137,7 @@ export default function VariantManager({ product, onClose }) {
         aria-label={`Kelola varian ${product.name}`}
         tabIndex={-1}
         className="bg-white rounded-2xl shadow-2xl w-full max-w-lg flex flex-col"
-        style={{ maxHeight: "90vh" }}
+        style={{ maxHeight: "90dvh" }}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}

@@ -460,7 +460,7 @@ export default function AdminProducts() {
             aria-label={editingId ? "Edit Produk" : "Tambah Produk"}
             tabIndex={-1}
             onSubmit={handleSave}
-            className="bg-surface rounded-2xl p-6 w-full max-w-md space-y-3 max-h-[90vh] overflow-y-auto shadow-2xl"
+            className="bg-surface rounded-2xl p-6 w-full max-w-md space-y-3 max-h-[90dvh] overflow-y-auto shadow-2xl"
           >
             <div className="flex items-center justify-between">
               <h2 className="font-bold text-lg font-display text-neutral-900">

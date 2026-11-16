@@ -88,9 +88,9 @@ export default function AdminLayout() {
   }
 
   return (
-    <div className="min-h-screen bg-background flex flex-col md:flex-row">
+    <div className="min-h-dvh bg-background flex flex-col md:flex-row">
       {/* Sidebar */}
-      <aside className="w-full md:w-64 bg-surface border-b md:border-b-0 md:border-r border-neutral-200 shrink-0 flex flex-col sticky top-0 z-20 md:static md:max-h-screen">
+      <aside className="w-full md:w-64 bg-surface border-b md:border-b-0 md:border-r border-neutral-200 shrink-0 flex flex-col sticky top-0 z-20 md:static md:max-h-dvh">
         {/* Logo + Mute */}
         <div className="p-4 border-b border-neutral-200 flex items-center justify-between">
           <span className="font-display text-xl font-extrabold tracking-tight text-primary">
@@ -195,7 +195,7 @@ export default function AdminLayout() {
       </aside>
 
       {/* Main Content */}
-      <main className="flex-1 min-w-0 max-h-screen overflow-y-auto">
+      <main className="flex-1 min-w-0 max-h-dvh overflow-y-auto">
         {!isMuted && !soundReady && (
           <div className="m-4 mb-0 sm:mx-6 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
             <span>Suara notifikasi pesanan baru belum aktif di browser ini.</span>
