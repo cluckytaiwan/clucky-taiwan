@@ -1,6 +1,5 @@
 // src/components/BudgetRecommender.jsx
 import { useState, useMemo, useCallback, useRef } from "react";
-import { useNavigate } from "react-router-dom";
 import { formatRupiah } from "../utils/formatCurrency";
 import { getRecommendations, getMinAvailablePrice } from "../utils/budgetRecommender";
 import { useCartStore } from "../store/cartStore";
@@ -38,11 +37,15 @@ export default function BudgetRecommender({ products, onCartOpen }) {
   const [inputRaw, setInputRaw] = useState("");
   const [hasSearched, setHasSearched] = useState(false);
   const [inputError, setInputError] = useState("");
-  const [addedCombos, setAddedCombos] = useState(new Set());
-
-  const { addItem } = useCartStore();
+  const addItem = useCartStore((s) => s.addItem);
+  const cartItems = useCartStore((s) => s.items);
+  // Status "sudah di keranjang" diturunkan dari isi keranjang (bukan disimpan
+  // terpisah), supaya tombol paket kembali aktif saat item dihapus/keranjang dikosongkan.
+  const cartProductIds = useMemo(
+    () => new Set(cartItems.map((i) => i.product_id)),
+    [cartItems],
+  );
   const { openModal } = useVariantModalStore();
-  const navigate = useNavigate();
   const sliderRef = useRef(null);
 
   // Geser slider horizontal rekomendasi (kiri/kanan)
@@ -104,18 +107,18 @@ export default function BudgetRecommender({ products, onCartOpen }) {
   // Sebelumnya: kalau ada 1 saja produk bervarian dalam kombo, SEMUA item lain
   // (termasuk yang simple) diabaikan dan tidak pernah masuk keranjang.
   const handleBuyPackage = useCallback((comboItems) => {
-    const comboId = comboItems.map(i => i.id).sort().join("-");
+    // Hanya item yang belum ada di keranjang yang ditambahkan — mencegah qty dobel
+    // saat pelanggan menghapus sebagian item paket lalu memesan paket yang sama lagi.
+    const missingItems = comboItems.filter((item) => !cartProductIds.has(item.id));
 
-    // Jika kombo sudah ditambahkan di sesi ini, jangan tambah lagi, cukup buka keranjang
-    if (addedCombos.has(comboId)) {
+    if (missingItems.length === 0) {
       if (onCartOpen) onCartOpen();
       return;
     }
 
-    const variantItems = comboItems.filter((item) => item.has_variants);
-    const simpleItems = comboItems.filter((item) => !item.has_variants);
+    const variantItems = missingItems.filter((item) => item.has_variants);
+    const simpleItems = missingItems.filter((item) => !item.has_variants);
 
-    // Produk simple dalam kombo langsung masuk keranjang, apa pun kondisinya.
     simpleItems.forEach((item) =>
       addItem({
         id: item.id,
@@ -129,37 +132,23 @@ export default function BudgetRecommender({ products, onCartOpen }) {
       }, 1),
     );
 
-    // Tampilkan notifikasi toast
-    toast.success("Berhasil ditambahkan ke keranjang!");
-
-    // Tandai bahwa kombo ini sudah dimasukkan ke keranjang
-    setAddedCombos(prev => {
-      const next = new Set(prev);
-      next.add(comboId);
-      return next;
-    });
-
     if (variantItems.length > 0) {
-      const target = variantItems[0];
-
-      const otherVariantNames = variantItems.slice(1).map((v) => v.name);
-
       if (simpleItems.length > 0) {
-        toast.success(`${simpleItems.length} menu tanpa varian berhasil ditambahkan!`);
+        toast.success(`${simpleItems.length} menu ditambahkan, pilih varian untuk menu lainnya`);
       }
 
+      const target = variantItems[0];
       openModal(target.id, {
         preselectVariantIds: target.min_variant_ids ?? [],
         referenceBudget: budget,
-        otherVariantItems: otherVariantNames,
+        otherVariantItems: variantItems.slice(1).map((v) => v.name),
       });
-
       return;
     }
 
-    // Semua item simple — tidak perlu redirect, cukup buka keranjang.
+    toast.success("Berhasil ditambahkan ke keranjang!");
     if (onCartOpen) onCartOpen();
-  }, [addItem, navigate, onCartOpen, addedCombos]);
+  }, [addItem, openModal, onCartOpen, cartProductIds, budget]);
 
   // ── Apakah combo butuh pilih varian dulu? ────────────────────────────────
   const comboNeedsVariant = (items) => items.some((i) => i.has_variants);
@@ -319,8 +308,7 @@ export default function BudgetRecommender({ products, onCartOpen }) {
                     const RankIcon = rank.icon;
                     const needsVariant = comboNeedsVariant(combo.items);
                     const efficiency = Math.round((combo.totalPrice / budget) * 100);
-                    const comboId = combo.items.map(i => i.id).sort().join("-");
-                    const isAdded = addedCombos.has(comboId);
+                    const isAdded = combo.items.every((i) => cartProductIds.has(i.id));
 
                     return (
                       <div
@@ -418,7 +406,15 @@ export default function BudgetRecommender({ products, onCartOpen }) {
                         </div>
 
                         {/* CTA Button */}
-                        {needsVariant ? (
+                        {isAdded ? (
+                          <button
+                            onClick={() => handleBuyPackage(combo.items)}
+                            className="w-full flex items-center justify-center gap-2 bg-neutral-500 hover:bg-neutral-600 shadow-inner active:scale-95 text-white font-bold py-3 rounded-xl transition-all text-sm"
+                          >
+                            <ShoppingBag size={15} />
+                            Lihat Keranjang
+                          </button>
+                        ) : needsVariant ? (
                           <button
                             onClick={() => handleBuyPackage(combo.items)}
                             className="w-full flex items-center justify-center gap-2 bg-amber-500 hover:bg-amber-600 active:scale-95 text-white font-bold py-3 rounded-xl transition-all text-sm"
@@ -429,11 +425,10 @@ export default function BudgetRecommender({ products, onCartOpen }) {
                         ) : (
                           <button
                             onClick={() => handleBuyPackage(combo.items)}
-                            className={`w-full flex items-center justify-center gap-2 active:scale-95 text-white font-bold py-3 rounded-xl transition-all text-sm ${isAdded ? "bg-neutral-500 hover:bg-neutral-600 shadow-inner" : rank.btnClass
-                              }`}
+                            className={`w-full flex items-center justify-center gap-2 active:scale-95 text-white font-bold py-3 rounded-xl transition-all text-sm ${rank.btnClass}`}
                           >
                             <ShoppingBag size={15} />
-                            {isAdded ? "Lihat Keranjang" : "Pesan Sekarang"}
+                            Pesan Sekarang
                           </button>
                         )}
                       </div>

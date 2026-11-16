@@ -104,6 +104,9 @@ export const useCartStore = create(
 
       clearCart: () => set({ items: [] }),
 
+      /** Kembalikan isi keranjang (dipakai untuk "Urungkan" setelah dikosongkan). */
+      restoreItems: (items) => set({ items }),
+
       getTotal: () => get().items.reduce((sum, i) => sum + i.price * i.qty, 0),
 
       getItemCount: () => get().items.reduce((sum, i) => sum + i.qty, 0),
