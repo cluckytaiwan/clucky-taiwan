@@ -14,7 +14,22 @@ export default function AdminLayout() {
   const navigate  = useNavigate();
   const currentPath = location.pathname;
   const { logout } = useAdminAuth();
-  const { isMuted, toggleMute } = useOrderNotification();
+  const { isMuted, toggleMute, soundReady, enableSound, unseenCount, clearUnseen } = useOrderNotification();
+  const activeCount = useOrdersStore(s => s.counts.diproses);
+  const fetchCounts = useOrdersStore(s => s.fetchCounts);
+
+  useEffect(() => { fetchCounts(); }, [fetchCounts]);
+
+  // Pesanan baru dianggap "dilihat" saat admin berada di halaman Pesanan dan tab terlihat
+  useEffect(() => {
+    if (currentPath !== "/admin/sales") return;
+    const clearIfVisible = () => {
+      if (document.visibilityState === "visible") clearUnseen();
+    };
+    clearIfVisible();
+    document.addEventListener("visibilitychange", clearIfVisible);
+    return () => document.removeEventListener("visibilitychange", clearIfVisible);
+  }, [currentPath, unseenCount, clearUnseen]);
 
   // Menu navigasi di HP: tertutup default agar konten langsung terlihat
   const [menuOpen, setMenuOpen] = useState(false);
@@ -118,7 +133,27 @@ export default function AdminLayout() {
           <NavLink to="/admin/dashboard" icon={LayoutDashboard} label="Dasbor" />
 
           {/* Penjualan */}
-          <NavLink to="/admin/sales" icon={ShoppingBag} label="Penjualan" />
+          <Link
+            to="/admin/sales"
+            className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-colors font-medium text-sm ${
+              currentPath === "/admin/sales"
+                ? "bg-primary text-white shadow-sm"
+                : "text-neutral-600 hover:bg-primary/10 hover:text-primary"
+            }`}
+          >
+            <ShoppingBag size={18} />
+            <span className="flex-1">Pesanan</span>
+            {activeCount > 0 && (
+              <span
+                aria-label={`${activeCount} pesanan perlu diproses`}
+                className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${
+                  currentPath === "/admin/sales" ? "bg-white/20 text-white" : "bg-blue-100 text-blue-700"
+                }`}
+              >
+                {activeCount}
+              </span>
+            )}
+          </Link>
 
           {/* Kategori */}
           <NavLink to="/admin/categories" icon={Tags} label="Kategori" />
@@ -161,6 +196,18 @@ export default function AdminLayout() {
 
       {/* Main Content */}
       <main className="flex-1 min-w-0 max-h-screen overflow-y-auto">
+        {!isMuted && !soundReady && (
+          <div className="m-4 mb-0 sm:mx-6 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+            <span>Suara notifikasi pesanan baru belum aktif di browser ini.</span>
+            <button
+              type="button"
+              onClick={enableSound}
+              className="rounded-lg bg-amber-500 px-3 py-1.5 font-semibold text-white hover:bg-amber-600"
+            >
+              Aktifkan suara
+            </button>
+          </div>
+        )}
         <Outlet />
       </main>
     </div>

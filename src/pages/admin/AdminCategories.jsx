@@ -130,10 +130,10 @@ export default function AdminCategories() {
                       </span>
                     </td>
                     <td className="p-4 flex gap-3">
-                      <button onClick={() => openEdit(c)} className="text-blue-500 hover:text-blue-600 transition-colors" title="Edit">
+                      <button onClick={() => openEdit(c)} className="p-2 -m-1 text-blue-600 hover:text-blue-700 transition-colors" title="Edit" aria-label={`Edit kategori ${c.nama_kategori}`}>
                         <Pencil size={18} />
                       </button>
-                      <button onClick={() => setConfirmDelete({ id: c.id, name: c.nama_kategori })} className="text-danger hover:text-red-700 transition-colors" title="Hapus">
+                      <button onClick={() => setConfirmDelete({ id: c.id, name: c.nama_kategori, productCount: c.produk?.length ?? 0 })} className="p-2 -m-1 text-danger hover:text-red-700 transition-colors" title="Hapus" aria-label={`Hapus kategori ${c.nama_kategori}`}>
                         <Trash2 size={18} />
                       </button>
                     </td>
@@ -201,7 +201,9 @@ export default function AdminCategories() {
               Yakin hapus <span className="font-semibold text-neutral-800">{confirmDelete.name}</span>?
             </p>
             <p className="text-xs text-amber-600 text-center mb-5">
-              Produk yang menggunakan kategori ini akan menjadi tanpa kategori.
+              {confirmDelete.productCount > 0
+                ? `${confirmDelete.productCount} produk di kategori ini akan menjadi tanpa kategori dan tidak muncul di filter kategori menu.`
+                : "Kategori ini tidak dipakai produk mana pun."}
             </p>
             <div className="flex gap-3">
               <button
