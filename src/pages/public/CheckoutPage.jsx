@@ -2,7 +2,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import CheckoutForm, { getPendingPayment, clearPendingPayment } from "../../components/CheckoutForm";
-import { CheckCircle2, Clock, CreditCard, X } from "lucide-react";
+import { CheckCircle2, Clock, CreditCard, X, Copy, Check } from "lucide-react";
 import { formatRupiah } from "../../utils/formatCurrency";
 import { loadSnap } from "../../utils/loadSnap";
 
@@ -21,7 +21,7 @@ function PendingPaymentBanner({ pending, onPayNow, onDismiss }) {
           <p className="text-xs text-neutral-500 mt-0.5">
             Pesanan <span className="font-semibold text-neutral-700">{pending.kode}</span>
             {pending.total ? ` · ${formatRupiah(pending.total)}` : ""}
-            {" "}— belum selesai dibayar.
+            {" "}— belum dibayar. Bisa juga dibayar dari menu Pesanan Saya.
           </p>
         </div>
         <div className="flex items-center gap-2 shrink-0">
@@ -34,6 +34,8 @@ function PendingPaymentBanner({ pending, onPayNow, onDismiss }) {
           </button>
           <button
             onClick={onDismiss}
+            aria-label="Sembunyikan pengingat pembayaran"
+            title="Sembunyikan (pesanan tetap ada di Pesanan Saya)"
             className="w-7 h-7 flex items-center justify-center rounded-full text-neutral-400 hover:bg-neutral-200 transition-colors"
           >
             <X size={14} />
@@ -47,7 +49,9 @@ function PendingPaymentBanner({ pending, onPayNow, onDismiss }) {
 /* ─── Main Page ─────────────────────────────────────────────── */
 export default function CheckoutPage() {
   const navigate = useNavigate();
-  const [completedOrderId, setCompletedOrderId] = useState(null);
+  // { kode, paid } — paid=false berarti Midtrans melaporkan pending (belum dibayar)
+  const [completed, setCompleted] = useState(null);
+  const [copied, setCopied] = useState(false);
   const [pendingPayment, setPendingPayment] = useState(null);
 
   useEffect(() => {
@@ -71,12 +75,11 @@ export default function CheckoutPage() {
       onSuccess: () => {
         clearPendingPayment();
         setPendingPayment(null);
-        setCompletedOrderId(pendingPayment.kode);
+        setCompleted({ kode: pendingPayment.kode, paid: true });
       },
       onPending: () => {
-        clearPendingPayment();
         setPendingPayment(null);
-        setCompletedOrderId(pendingPayment.kode);
+        setCompleted({ kode: pendingPayment.kode, paid: false });
       },
       onError: () => {
         // Biarkan banner tetap tampil
@@ -92,28 +95,53 @@ export default function CheckoutPage() {
     setPendingPayment(null);
   }
 
-  /* Halaman sukses setelah bayar */
-  if (completedOrderId) {
+  async function handleCopy() {
+    try {
+      await navigator.clipboard.writeText(completed.kode);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1800);
+    } catch {
+      /* clipboard tidak tersedia — kode tetap terlihat di layar */
+    }
+  }
+
+  /* Halaman hasil setelah pembayaran (lunas atau masih menunggu) */
+  if (completed) {
+    const { kode, paid } = completed;
     return (
       <div className="min-h-screen bg-background flex items-center justify-center px-4">
         <div className="max-w-sm text-center">
-          <CheckCircle2 className="mx-auto text-success" size={64} />
+          {paid ? (
+            <CheckCircle2 className="mx-auto text-success" size={64} />
+          ) : (
+            <Clock className="mx-auto text-amber-500" size={64} />
+          )}
           <h1 className="mt-4 font-display text-xl font-bold text-neutral-900">
-            Pesanan Diterima!
+            {paid ? "Pembayaran Berhasil!" : "Menunggu Pembayaran"}
           </h1>
           <p className="mt-2 font-body text-sm text-neutral-500">
-            Simpan <b>Kode Pesanan</b> berikut untuk mengecek status pesanan Anda:
+            {paid
+              ? "Pesananmu sedang kami siapkan. Status pesanan tersimpan otomatis di perangkat ini."
+              : "Selesaikan pembayaran QRIS-mu. Status akan berubah otomatis setelah pembayaran diterima."}
           </p>
-          <div className="mt-3 flex items-center justify-center gap-2 rounded-lg bg-neutral-200/50 p-3">
-            <span className="font-mono text-xl font-bold tracking-widest text-primary">
-              {completedOrderId}
-            </span>
+          <div className="mt-4 flex items-center justify-center gap-2 rounded-lg bg-neutral-200/50 p-3">
+            <span className="font-mono text-xl font-bold tracking-widest text-primary">{kode}</span>
+            <button
+              onClick={handleCopy}
+              aria-label="Salin kode pesanan"
+              className="rounded-lg p-1.5 text-neutral-500 hover:bg-neutral-200 hover:text-neutral-900"
+            >
+              {copied ? <Check size={18} className="text-success" /> : <Copy size={18} />}
+            </button>
           </div>
+          <p className="mt-2 font-body text-xs text-neutral-500">
+            Tunjukkan kode ini saat mengambil pesanan.
+          </p>
           <button
             onClick={() => navigate("/cek-pesanan")}
             className="mt-6 w-full rounded-xl bg-primary py-3 font-body font-semibold text-white hover:bg-primary-dark"
           >
-            Cek Status Pesanan
+            {paid ? "Lihat Status Pesanan" : "Bayar / Cek Status"}
           </button>
           <button
             onClick={() => navigate("/")}
@@ -135,10 +163,11 @@ export default function CheckoutPage() {
       />
       <CheckoutForm
         onBack={() => navigate("/")}
-        onSuccess={(orderId) => {
+        onSuccess={(kode, { paid }) => {
           setPendingPayment(null);
-          setCompletedOrderId(orderId);
+          setCompleted({ kode, paid });
         }}
+        onPayLater={() => navigate("/cek-pesanan")}
       />
     </div>
   );

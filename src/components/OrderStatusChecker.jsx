@@ -2,7 +2,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { statusLabel, fulfillmentLabel } from "../constants/orderStatus";
 import { formatRupiah } from "../utils/formatCurrency";
-import { CreditCard, Loader2, ChefHat, ShoppingBag, CheckCircle2, AlertCircle, XCircle, History, ChevronRight } from "lucide-react";
+import { CreditCard, Loader2, ChefHat, ShoppingBag, CheckCircle2, AlertCircle, XCircle, History, ChevronRight, ChevronLeft } from "lucide-react";
 import { clearPendingPayment } from "./CheckoutForm";
 import { loadSnap } from "../utils/loadSnap";
 import { getOrderHistory } from "../utils/storage";
@@ -287,10 +287,11 @@ export default function OrderStatusChecker() {
               </div>
               <div className="space-y-3">
                 {history.map((order, idx) => (
-                  <div 
+                  <button
+                    type="button"
                     key={idx}
                     onClick={() => handleHistoryClick(order)}
-                    className="bg-white border border-neutral-200 rounded-2xl p-4 flex items-center justify-between cursor-pointer hover:border-[#D63E4D]/50 hover:shadow-sm transition-all"
+                    className="w-full text-left bg-white border border-neutral-200 rounded-2xl p-4 flex items-center justify-between cursor-pointer hover:border-primary/50 hover:shadow-sm transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
                   >
                     <div>
                       <p className="font-mono font-bold text-neutral-900">{order.kode}</p>
@@ -302,7 +303,7 @@ export default function OrderStatusChecker() {
                       <span className="font-bold text-neutral-900">{formatRupiah(order.total)}</span>
                       <ChevronRight size={20} className="text-neutral-400" />
                     </div>
-                  </div>
+                  </button>
                 ))}
               </div>
             </>
@@ -319,6 +320,17 @@ export default function OrderStatusChecker() {
             </div>
           )}
         </div>
+      )}
+
+      {result && history.length > 0 && (
+        <button
+          type="button"
+          onClick={() => { setResult(null); setError(""); }}
+          className="mb-3 inline-flex items-center gap-1.5 font-body text-sm font-semibold text-neutral-600 hover:text-primary"
+        >
+          <ChevronLeft size={16} />
+          Semua pesanan
+        </button>
       )}
 
       {result && (
