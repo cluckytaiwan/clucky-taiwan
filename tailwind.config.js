@@ -19,7 +19,9 @@ export default {
         danger: "#B01F2E",
       },
       fontFamily: {
-        display: ['"Baloo 2"', "cursive"],
+        // Judul memakai Plus Jakarta Sans (sama dengan body); kelas font-display
+        // dipertahankan agar mudah diganti ke font display lain di kemudian hari.
+        display: ['"Plus Jakarta Sans"', "sans-serif"],
         body: ['"Plus Jakarta Sans"', "sans-serif"],
       },
     },
