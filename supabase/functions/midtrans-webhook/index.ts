@@ -54,7 +54,7 @@ Deno.serve(async (req) => {
       notification.order_id + notification.status_code + notification.gross_amount + serverKey,
     );
 
-    if (expectedSignature !== notification.signature_key) {
+    if (!safeEqual(expectedSignature, String(notification.signature_key ?? ""))) {
       console.error("Invalid signature for order:", notification.order_id);
       return jsonResponse({ success: false, error: { code: "INVALID_SIGNATURE", message: "Signature tidak valid" } }, 200);
     }
@@ -74,63 +74,43 @@ Deno.serve(async (req) => {
     }
 
     // ============================================
-    // 3. IDEMPOTENCY — jangan proses ulang status final
-    // ============================================
-    const finalStatuses = ["lunas", "kadaluarsa", "dibatalkan", "ditolak", "dikembalikan"];
-    if (finalStatuses.includes(order.status_pembayaran)) {
-      console.log(`Order ${order.id} sudah final: ${order.status_pembayaran}`);
-      return jsonResponse({ success: true, message: "Already processed" }, 200);
-    }
-
-    // ============================================
-    // 4. VALIDASI JUMLAH
+    // 3. VALIDASI JUMLAH
     // ============================================
     const notifiedAmount = parseFloat(notification.gross_amount);
-    if (Math.abs(notifiedAmount - order.total_harga) > 1) {
+    if (Math.abs(notifiedAmount - Number(order.total_harga)) > 1) {
       console.error(`Amount mismatch order ${order.id}: expected ${order.total_harga}, got ${notifiedAmount}`);
       return jsonResponse({ success: false, error: { code: "AMOUNT_MISMATCH", message: "Nominal tidak cocok" } }, 200);
     }
 
     // ============================================
-    // 5. MAPPING STATUS & UPDATE
+    // 4. MAPPING STATUS
     // ============================================
     const newStatus = mapMidtransStatus(notification.transaction_status, notification.fraud_status);
     if (!newStatus) {
       return jsonResponse({ success: true, message: "No action needed" }, 200);
     }
 
-    const updatePayload: Record<string, unknown> = { status_pembayaran: newStatus };
-    // Catat waktu pembayaran tepat saat status menjadi lunas (untuk laporan omzet akurat)
-    if (newStatus === "lunas") {
-      updatePayload.dibayar_pada = new Date().toISOString();
-    }
-
-    const { error: updateError } = await supabase
-      .from("pesanan")
-      .update(updatePayload)
-      .eq("id", order.id);
-
-    if (updateError) throw updateError;
-
     // ============================================
-    // 6. KEMBALIKAN STOK JIKA GAGAL/BATAL/KADALUARSA
+    // 5. UPDATE ATOMIK (status + pengembalian stok dalam satu transaksi DB)
+    //    Fungsi mengunci baris pesanan dan hanya mengizinkan transisi yang sah,
+    //    sehingga notifikasi ganda/bersamaan tidak memproses dua kali.
     // ============================================
-    if (["kadaluarsa", "dibatalkan", "ditolak"].includes(newStatus)) {
-      const { data: items } = await supabase
-        .from("detail_pesanan")
-        .select("produk_id, jumlah")
-        .eq("pesanan_id", order.id);
+    const { data: result, error: rpcError } = await supabase.rpc("proses_status_pembayaran", {
+      p_pesanan_id: order.id,
+      p_status: newStatus,
+    });
+    if (rpcError) throw rpcError;
 
-      if (items) {
-        for (const item of items) {
-          if (item.produk_id) {
-            await supabase.rpc("tambah_stok", { p_produk_id: item.produk_id, p_jumlah: item.jumlah });
-          }
-        }
+    if (result === "ignored") {
+      if (newStatus === "lunas" && order.status_pembayaran !== "lunas") {
+        // Pembayaran masuk untuk pesanan yang sudah dibatalkan/kedaluwarsa —
+        // perlu ditangani manual (refund atau proses pesanan).
+        console.error(
+          `PAID_AFTER_FINAL: order ${order.id} (${order.status_pembayaran}) menerima settlement Midtrans ${notification.order_id}`,
+        );
       }
+      return jsonResponse({ success: true, message: "Already processed" }, 200);
     }
-    // Jika newStatus === "lunas": stok TIDAK dikurangi lagi (sudah direservasi
-    // saat create-order), ini hanya konfirmasi reservasi menjadi permanen.
 
     return jsonResponse({ success: true, message: "OK" }, 200);
   } catch (err) {
@@ -138,6 +118,14 @@ Deno.serve(async (req) => {
     return jsonResponse({ success: false, error: { code: "INTERNAL_ERROR", message: "Error logged" } }, 200);
   }
 });
+
+/** Perbandingan string waktu-konstan (mencegah timing attack pada signature). */
+function safeEqual(a: string, b: string): boolean {
+  if (a.length !== b.length) return false;
+  let diff = 0;
+  for (let i = 0; i < a.length; i++) diff |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  return diff === 0;
+}
 
 async function sha512(text: string): Promise<string> {
   const encoder = new TextEncoder();
