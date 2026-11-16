@@ -4,6 +4,7 @@ import { ShoppingBag } from "lucide-react";
 import ProductCard from "../../components/ProductCard";
 import CartDrawer from "../../components/CartDrawer";
 import BudgetRecommender from "../../components/BudgetRecommender";
+import StoreFooter from "../../components/StoreFooter";
 import { useCartStore } from "../../store/cartStore";
 import { useProducts } from "../../hooks/useProducts";
 import heroImage from "../../assets/hero.jpg";
@@ -171,6 +172,8 @@ export default function HomePage() {
           </div>
         )}
       </section>
+
+      <StoreFooter />
 
       <CartDrawer isOpen={cartOpen} onClose={() => setCartOpen(false)} onCheckout={handleCheckout} />
     </div>

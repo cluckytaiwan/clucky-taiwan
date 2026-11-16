@@ -7,6 +7,7 @@ import { clearPendingPayment } from "./CheckoutForm";
 import { loadSnap } from "../utils/loadSnap";
 import { getOrderHistory } from "../utils/storage";
 import { useOrderRealtime } from "../hooks/useOrderRealtime";
+import { STORE_INFO, whatsappLink } from "../config/storeInfo";
 
 /* ─── Komponen Timeline Progress ───────────────────────────── */
 function OrderProgress({ status, fulfillmentStatus, paidAt }) {
@@ -399,7 +400,33 @@ export default function OrderStatusChecker() {
             {/* Pesan jika pending tapi token sudah expired */}
             {result.status === "menunggu_pembayaran" && !result.snap_token && (
               <div className="bg-[#fae4e8]/50 border border-[#fae4e8] rounded-2xl px-6 py-4 text-sm text-[#D63E4D] leading-relaxed text-center mt-4">
-                <strong>Token pembayaran sudah kedaluwarsa.</strong> Silakan hubungi admin atau buat pesanan baru.
+                <strong>Token pembayaran sudah kedaluwarsa.</strong>{" "}
+                {whatsappLink() ? (
+                  <a
+                    href={whatsappLink(`Halo, token pembayaran pesanan ${result.kode_pesanan} kedaluwarsa.`)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="font-semibold underline underline-offset-2"
+                  >
+                    Hubungi admin via WhatsApp
+                  </a>
+                ) : (
+                  "Silakan hubungi admin"
+                )}{" "}
+                atau buat pesanan baru.
+              </div>
+            )}
+
+            {/* Lokasi pengambilan — tampil setelah pesanan dibayar */}
+            {result.status === "lunas" && STORE_INFO.address && (
+              <div className="rounded-2xl border border-neutral-200 bg-neutral-50 px-5 py-4 text-sm text-neutral-700">
+                <p className="font-semibold text-neutral-900">Ambil pesanan di</p>
+                <p className="mt-0.5">{STORE_INFO.address}</p>
+                {STORE_INFO.mapsUrl && (
+                  <a href={STORE_INFO.mapsUrl} target="_blank" rel="noopener noreferrer" className="mt-1 inline-block font-semibold text-primary underline underline-offset-2">
+                    Buka di Google Maps
+                  </a>
+                )}
               </div>
             )}
           </div>
