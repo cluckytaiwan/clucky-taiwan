@@ -8,9 +8,11 @@ import VariantBottomSheet from "./components/VariantBottomSheet";
 
 // Halaman publik — diload langsung (critical path)
 import HomePage from "./pages/public/HomePage";
-import CheckoutPage from "./pages/public/CheckoutPage";
-import OrderStatusPage from "./pages/public/OrderStatusPage";
-import ProductDetailPage from "./pages/public/ProductDetailPage";
+
+// Halaman publik selain beranda — lazy agar kunjungan pertama (beranda) lebih ringan
+const CheckoutPage = lazy(() => import("./pages/public/CheckoutPage"));
+const OrderStatusPage = lazy(() => import("./pages/public/OrderStatusPage"));
+const ProductDetailPage = lazy(() => import("./pages/public/ProductDetailPage"));
 
 // Halaman admin — lazy loaded agar tidak masuk bundle publik
 const AdminLogin = lazy(() => import("./pages/admin/AdminLogin"));
@@ -49,9 +51,9 @@ export default function App() {
         <Routes>
           {/* Halaman Publik */}
           <Route path="/" element={<HomePage />} />
-          <Route path="/produk/:id" element={<ProductDetailPage />} />
-          <Route path="/checkout" element={<CheckoutPage />} />
-          <Route path="/cek-pesanan" element={<OrderStatusPage />} />
+          <Route path="/produk/:id" element={<Suspense fallback={<AdminFallback />}><ProductDetailPage /></Suspense>} />
+          <Route path="/checkout" element={<Suspense fallback={<AdminFallback />}><CheckoutPage /></Suspense>} />
+          <Route path="/cek-pesanan" element={<Suspense fallback={<AdminFallback />}><OrderStatusPage /></Suspense>} />
 
           {/* Halaman Admin — dibungkus Suspense untuk lazy load */}
           <Route

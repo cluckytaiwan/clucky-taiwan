@@ -5,9 +5,11 @@ import ProductCard from "../../components/ProductCard";
 import CartDrawer from "../../components/CartDrawer";
 import BudgetRecommender from "../../components/BudgetRecommender";
 import StoreFooter from "../../components/StoreFooter";
+import StructuredData from "../../components/StructuredData";
 import { useCartStore } from "../../store/cartStore";
 import { useProducts } from "../../hooks/useProducts";
 import heroImage from "../../assets/hero.jpg";
+import heroImageSmall from "../../assets/hero-800.jpg";
 import { usePageTitle } from "../../hooks/usePageTitle";
 
 
@@ -76,6 +78,11 @@ export default function HomePage() {
       <section className="relative min-h-[420px] sm:min-h-[600px] flex items-center overflow-hidden bg-neutral-900">
         <img
           src={heroImage}
+          srcSet={`${heroImageSmall} 800w, ${heroImage} 1280w`}
+          sizes="100vw"
+          width={1280}
+          height={640}
+          fetchPriority="high"
           alt="Ayam Goreng Taiwan"
           className="absolute inset-0 w-full h-full object-cover object-right"
         />
@@ -187,6 +194,7 @@ export default function HomePage() {
 
       </main>
 
+      <StructuredData />
       <StoreFooter />
 
       <CartDrawer isOpen={cartOpen} onClose={() => setCartOpen(false)} onCheckout={handleCheckout} />
