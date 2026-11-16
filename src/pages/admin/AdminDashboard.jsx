@@ -164,11 +164,24 @@ export default function AdminDashboard() {
     // Ambil SEMUA pesanan lunas — filter tanggal diterapkan client-side
     // sehingga aman meski kolom dibayar_pada NULL atau belum ada.
     // Fallback: gunakan created_at jika dibayar_pada tidak tersedia.
-    const qOrders = supabase
-      .from("pesanan")
-      .select("id, kode_pesanan, nama_pelanggan, total_harga, status_pembayaran, status_pesanan, dibayar_pada, created_at, detail_pesanan(produk_id, nama_produk, jumlah, subtotal)")
-      .eq("status_pembayaran", "lunas")
-      .order("created_at", { ascending: false });
+    // PostgREST membatasi 1000 baris per request (max_rows) — ambil per halaman
+    // supaya omzet tidak terpotong setelah transaksi lunas melewati 1000.
+    const qOrders = (async () => {
+      const PAGE = 1000;
+      const all = [];
+      for (let from = 0; ; from += PAGE) {
+        const { data, error } = await supabase
+          .from("pesanan")
+          .select("id, kode_pesanan, nama_pelanggan, total_harga, status_pembayaran, status_pesanan, dibayar_pada, created_at, detail_pesanan(produk_id, nama_produk, jumlah, subtotal)")
+          .eq("status_pembayaran", "lunas")
+          .order("created_at", { ascending: false })
+          .order("id", { ascending: true })
+          .range(from, from + PAGE - 1);
+        if (error) return { data: all, error };
+        all.push(...(data || []));
+        if (!data || data.length < PAGE) return { data: all, error: null };
+      }
+    })();
 
     // Produk untuk ringkasan stok
     const qProd = supabase

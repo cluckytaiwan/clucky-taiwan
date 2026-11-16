@@ -28,6 +28,22 @@ interface VariantRow {
   harga_tambahan: number;
 }
 
+// Batas pesanan belum dibayar per nomor HP dalam jendela waktu — mencegah stok
+// "dikunci" oleh pesanan berulang yang tidak pernah dibayar.
+const MAX_PENDING_PER_PHONE = 3;
+const PENDING_WINDOW_MINUTES = 45;
+// Masa berlaku Snap. Cron kedaluwarsakan_pesanan_lama() membatalkan setelah 45 menit.
+const SNAP_EXPIRY_MINUTES = 30;
+
+// Alfabet tanpa karakter yang mudah tertukar (0/O, 1/I/L)
+const CODE_ALPHABET = "23456789ABCDEFGHJKMNPQRSTUVWXYZ";
+function generateOrderCode(length = 8): string {
+  const bytes = crypto.getRandomValues(new Uint8Array(length));
+  let out = "";
+  for (const b of bytes) out += CODE_ALPHABET[b % CODE_ALPHABET.length];
+  return `CTX-${out}`;
+}
+
 function errorResponse(code: string, message: string, status: number) {
   return jsonResponse({ success: false, error: { code, message } }, status);
 }
@@ -62,6 +78,16 @@ Deno.serve(async (req) => {
         "customer_phone wajib diisi dengan format 08xxxxxxxxxx",
         400,
       );
+    }
+
+    const name = payload.customer_name.trim();
+    const notes = payload.customer_notes?.trim() ?? "";
+    const address = payload.customer_address?.trim() ?? "";
+    if (name.length > 60 || notes.length > 255 || address.length > 200) {
+      return errorResponse("VALIDATION_ERROR", "Nama, catatan, atau alamat terlalu panjang", 400);
+    }
+    if (payload.items.length > 20) {
+      return errorResponse("VALIDATION_ERROR", "Terlalu banyak item dalam satu pesanan", 400);
     }
 
     const productIds = payload.items.map((i) => i.product_id);
@@ -180,6 +206,23 @@ Deno.serve(async (req) => {
       return errorResponse("VALIDATION_ERROR", "Total pesanan tidak valid", 400);
     }
 
+    // ── Batasi pesanan belum dibayar per nomor HP ───────────────────────────
+    const since = new Date(Date.now() - PENDING_WINDOW_MINUTES * 60 * 1000).toISOString();
+    const { count: pendingCount, error: pendingError } = await supabase
+      .from("pesanan")
+      .select("id", { count: "exact", head: true })
+      .eq("no_hp_pelanggan", payload.customer_phone.trim())
+      .eq("status_pembayaran", "menunggu_pembayaran")
+      .gte("created_at", since);
+    if (pendingError) throw pendingError;
+    if ((pendingCount ?? 0) >= MAX_PENDING_PER_PHONE) {
+      return errorResponse(
+        "TOO_MANY_PENDING",
+        "Masih ada beberapa pesanan yang belum dibayar. Selesaikan pembayaran di menu Pesanan Saya, atau tunggu beberapa saat.",
+        429,
+      );
+    }
+
     // ── Kurangi stok (atomic, dengan rollback jika gagal) ───────────────────
     const decrementedItems: { product_id: string; qty: number }[] = [];
 
@@ -205,22 +248,29 @@ Deno.serve(async (req) => {
 
     // ── Buat pesanan ────────────────────────────────────────────────────────
     const midtransOrderId = `CLUCKY-${Date.now()}-${crypto.randomUUID().slice(0, 8)}`;
-    const shortCode = `CTX-${crypto.randomUUID().slice(0, 5).toUpperCase()}`;
 
-    const { data: order, error: orderError } = await supabase
-      .from("pesanan")
-      .insert({
-        nama_pelanggan: payload.customer_name.trim(),
-        no_hp_pelanggan: payload.customer_phone.trim(),
-        alamat_pelanggan: payload.customer_address?.trim() || "-",
-        catatan: payload.customer_notes?.trim() || null,
-        total_harga: totalAmount,
-        status_pembayaran: "menunggu_pembayaran",
-        midtrans_order_id: midtransOrderId,
-        kode_pesanan: shortCode,
-      })
-      .select("id, kode_pesanan")
-      .single();
+    // Kode pendek untuk pelanggan; ulangi bila (sangat jarang) bentrok dengan kode lain
+    let order: { id: string; kode_pesanan: string } | null = null;
+    let orderError: { code?: string; message?: string } | null = null;
+    for (let attempt = 0; attempt < 3; attempt++) {
+      const res = await supabase
+        .from("pesanan")
+        .insert({
+          nama_pelanggan: name,
+          no_hp_pelanggan: payload.customer_phone.trim(),
+          alamat_pelanggan: address || "-",
+          catatan: notes || null,
+          total_harga: totalAmount,
+          status_pembayaran: "menunggu_pembayaran",
+          midtrans_order_id: midtransOrderId,
+          kode_pesanan: generateOrderCode(),
+        })
+        .select("id, kode_pesanan")
+        .single();
+      order = res.data;
+      orderError = res.error;
+      if (!orderError || orderError.code !== "23505") break; // 23505 = unique_violation
+    }
 
     if (orderError || !order) {
       await rollbackStock(supabase, decrementedItems);
@@ -263,8 +313,9 @@ Deno.serve(async (req) => {
           order_id: midtransOrderId,
           gross_amount: totalAmount,
         },
+        expiry: { unit: "minutes", duration: SNAP_EXPIRY_MINUTES },
         customer_details: {
-          first_name: payload.customer_name.trim(),
+          first_name: name,
           phone: payload.customer_phone.trim(),
         },
         item_details: orderItems.map((i) => ({
