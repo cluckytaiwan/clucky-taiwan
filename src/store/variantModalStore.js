@@ -7,6 +7,9 @@ export const useVariantModalStore = create((set) => ({
   preselectVariantIds: [],
   referenceBudget: null,
   otherVariantItems: [],
+  // Antrean produk bervarian berikutnya dari paket rekomendasi:
+  // [{ id, name, preselectVariantIds }] — dibuka otomatis setelah "Tambah".
+  queue: [],
   
   openModal: (productId, options = {}) => set({
     isOpen: true,
@@ -14,6 +17,7 @@ export const useVariantModalStore = create((set) => ({
     preselectVariantIds: options.preselectVariantIds || [],
     referenceBudget: options.referenceBudget || null,
     otherVariantItems: options.otherVariantItems || [],
+    queue: options.queue || [],
   }),
   
   closeModal: () => set({

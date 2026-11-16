@@ -1,14 +1,43 @@
 // src/components/CartDrawer.jsx
+import { useEffect, useState } from "react";
 import { Drawer } from "vaul";
 import { X, Trash2, Minus, Plus, ShoppingBag } from "lucide-react";
 import { useCartStore } from "../store/cartStore";
 import { formatRupiah } from "../utils/formatCurrency";
 
 export default function CartDrawer({ isOpen, onClose, onCheckout }) {
-  const { items, updateQty, removeItem, getTotal } = useCartStore();
+  const { items, updateQty, removeItem, getTotal, clearCart, restoreItems } = useCartStore();
+
+  // Snapshot isi keranjang terakhir yang dikosongkan, untuk tombol "Urungkan"
+  // di dalam drawer (bukan toast, supaya tidak menutupi header dan tidak
+  // menutup drawer saat diklik).
+  const [clearedSnapshot, setClearedSnapshot] = useState(null);
+
+  // Snapshot hanya berlaku sampai keranjang terisi lagi — mencegah "Urungkan"
+  // basi muncul saat keranjang kelak kosong karena hapus satu per satu.
+  useEffect(() => {
+    if (items.length > 0) setClearedSnapshot(null);
+  }, [items.length]);
+
+  function handleClearAll() {
+    setClearedSnapshot(items);
+    clearCart();
+  }
+
+  function handleUndoClear() {
+    if (clearedSnapshot) restoreItems(clearedSnapshot);
+    setClearedSnapshot(null);
+  }
+
+  function handleOpenChange(open) {
+    if (!open) {
+      setClearedSnapshot(null);
+      onClose();
+    }
+  }
 
   return (
-    <Drawer.Root open={isOpen} onOpenChange={(open) => !open && onClose()} direction="right">
+    <Drawer.Root open={isOpen} onOpenChange={handleOpenChange} direction="right">
       <Drawer.Portal>
         <Drawer.Overlay className="fixed inset-0 z-40 bg-neutral-900/50" />
         <Drawer.Content className="fixed inset-y-0 right-0 z-50 flex w-full max-w-sm flex-col bg-background shadow-xl outline-none">
@@ -16,13 +45,23 @@ export default function CartDrawer({ isOpen, onClose, onCheckout }) {
             <Drawer.Title className="font-display text-lg font-bold text-neutral-900">
               Keranjang Saya
             </Drawer.Title>
+            <div className="flex items-center gap-1">
+            {items.length > 0 && (
+              <button
+                onClick={handleClearAll}
+                className="rounded-lg px-2 py-1 font-body text-sm font-medium text-danger hover:bg-red-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+              >
+                Kosongkan
+              </button>
+            )}
             <button
-              onClick={onClose}
+              onClick={() => handleOpenChange(false)}
               aria-label="Tutup keranjang"
               className="rounded-full p-1 text-neutral-900 hover:bg-neutral-200/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
             >
               <X size={20} />
             </button>
+            </div>
           </div>
 
           <div className="flex-1 overflow-y-auto p-4 space-y-3">
@@ -32,10 +71,18 @@ export default function CartDrawer({ isOpen, onClose, onCheckout }) {
                   <ShoppingBag size={28} className="text-neutral-400" />
                 </div>
                 <p className="font-body text-sm text-neutral-500 mb-4">
-                  Keranjang masih kosong
+                  {clearedSnapshot ? "Keranjang dikosongkan" : "Keranjang masih kosong"}
                 </p>
+                {clearedSnapshot && (
+                  <button
+                    onClick={handleUndoClear}
+                    className="mb-3 block w-full font-body text-sm font-semibold text-primary underline underline-offset-2 hover:text-primary-dark"
+                  >
+                    Urungkan
+                  </button>
+                )}
                 <button
-                  onClick={onClose}
+                  onClick={() => handleOpenChange(false)}
                   className="inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2.5 font-body text-sm font-semibold text-white transition-colors hover:bg-primary-dark"
                 >
                   Mulai Belanja

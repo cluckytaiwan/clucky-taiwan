@@ -2,11 +2,12 @@
 import { useState, useEffect, useCallback } from "react";
 import { statusLabel, fulfillmentLabel } from "../constants/orderStatus";
 import { formatRupiah } from "../utils/formatCurrency";
-import { CreditCard, Loader2, ChefHat, ShoppingBag, CheckCircle2, AlertCircle, XCircle, History, ChevronRight } from "lucide-react";
+import { CreditCard, Loader2, ChefHat, ShoppingBag, CheckCircle2, AlertCircle, XCircle, History, ChevronRight, ChevronLeft } from "lucide-react";
 import { clearPendingPayment } from "./CheckoutForm";
 import { loadSnap } from "../utils/loadSnap";
 import { getOrderHistory } from "../utils/storage";
 import { useOrderRealtime } from "../hooks/useOrderRealtime";
+import { STORE_INFO, whatsappLink } from "../config/storeInfo";
 
 /* ─── Komponen Timeline Progress ───────────────────────────── */
 function OrderProgress({ status, fulfillmentStatus, paidAt }) {
@@ -70,8 +71,8 @@ function OrderProgress({ status, fulfillmentStatus, paidAt }) {
 
   if (isFailed) {
     return (
-      <div className="flex flex-col items-center justify-center py-10 text-[#D63E4D] bg-[#fae4e8]/30">
-        <div className="w-16 h-16 rounded-full bg-[#fae4e8] flex items-center justify-center mb-3">
+      <div className="flex flex-col items-center justify-center py-10 text-primary bg-primary/5">
+        <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-3">
           <XCircle size={32} />
         </div>
         <p className="font-bold text-lg">{statusLabel[status]?.text || status}</p>
@@ -91,11 +92,11 @@ function OrderProgress({ status, fulfillmentStatus, paidAt }) {
       <p className="text-sm text-neutral-500 font-medium mb-8 px-4">Alur status pesanan Anda:</p>
       <div className="relative max-w-full">
         {/* Garis Abu-abu Dasar */}
-        <div className="absolute left-[10%] right-[10%] top-6 -translate-y-1/2 h-[3px] bg-[#EADFDB] z-0"></div>
+        <div className="absolute left-[10%] right-[10%] top-6 -translate-y-1/2 h-[3px] bg-neutral-200 z-0"></div>
         
         {/* Garis Merah Progress (Solid) */}
         <div 
-           className="absolute left-[10%] top-6 -translate-y-1/2 h-[3px] bg-[#D63E4D] z-0 transition-all duration-700 ease-in-out" 
+           className="absolute left-[10%] top-6 -translate-y-1/2 h-[3px] bg-primary z-0 transition-all duration-700 ease-in-out" 
            style={{ width: `calc(${solidPercentage}% * 0.8)` }}
         ></div>
         
@@ -119,11 +120,11 @@ function OrderProgress({ status, fulfillmentStatus, paidAt }) {
             return (
               <div key={idx} className="flex flex-col items-center w-1/4">
                 <div className={`relative flex items-center justify-center w-12 h-12 rounded-full transition-all duration-500 ${
-                  activeOrPast ? "bg-[#D63E4D] text-white shadow-sm" : "bg-white border-2 border-[#EADFDB] text-[#8C8380]"
-                } ${step.isActive ? "ring-[10px] ring-[#fae4e8] z-20" : "z-10 scale-90"}`}>
+                  activeOrPast ? "bg-primary text-white shadow-sm" : "bg-white border-2 border-neutral-200 text-neutral-500"
+                } ${step.isActive ? "ring-[10px] ring-primary/10 z-20" : "z-10 scale-90"}`}>
                   
                   {step.isActive && (
-                    <div className="absolute inset-0 rounded-full bg-[#D63E4D] opacity-20 animate-ping" style={{ transform: 'scale(1.2)' }}></div>
+                    <div className="absolute inset-0 rounded-full bg-primary opacity-20 animate-ping" style={{ transform: 'scale(1.2)' }}></div>
                   )}
                   
                   <div className="relative z-10 transition-transform duration-500">
@@ -138,11 +139,11 @@ function OrderProgress({ status, fulfillmentStatus, paidAt }) {
                   
                   {/* Badge "Sekarang" & Timer */}
                   <div className={`mt-2 flex flex-col items-center transition-all duration-500 ${step.isActive ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-2 pointer-events-none absolute"}`}>
-                    <span className="text-[10px] font-bold text-[#D63E4D] bg-[#fae4e8] px-3 py-1 rounded-full whitespace-nowrap">
+                    <span className="text-[10px] font-bold text-primary bg-primary/10 px-3 py-1 rounded-full whitespace-nowrap">
                       Sekarang
                     </span>
                     {step.id === 2 && timeLeft && (
-                      <span className="text-[9px] text-[#D63E4D] font-bold mt-1.5 whitespace-nowrap bg-white border border-[#fae4e8] px-2 py-0.5 rounded-md shadow-sm">
+                      <span className="text-[9px] text-primary font-bold mt-1.5 whitespace-nowrap bg-white border border-primary/15 px-2 py-0.5 rounded-md shadow-sm">
                         Estimasi: {timeLeft}
                       </span>
                     )}
@@ -271,7 +272,7 @@ export default function OrderStatusChecker() {
   return (
     <div className="max-w-3xl mx-auto p-4 sm:p-8">
       {error && (
-        <p className="text-sm text-[#D63E4D] bg-[#fae4e8]/50 border border-[#fae4e8] rounded-lg p-3 mb-6 max-w-2xl mx-auto text-center">
+        <p className="text-sm text-primary bg-primary/5 border border-primary/15 rounded-lg p-3 mb-6 max-w-2xl mx-auto text-center">
           {error}
         </p>
       )}
@@ -287,10 +288,11 @@ export default function OrderStatusChecker() {
               </div>
               <div className="space-y-3">
                 {history.map((order, idx) => (
-                  <div 
+                  <button
+                    type="button"
                     key={idx}
                     onClick={() => handleHistoryClick(order)}
-                    className="bg-white border border-neutral-200 rounded-2xl p-4 flex items-center justify-between cursor-pointer hover:border-[#D63E4D]/50 hover:shadow-sm transition-all"
+                    className="w-full text-left bg-white border border-neutral-200 rounded-2xl p-4 flex items-center justify-between cursor-pointer hover:border-primary/50 hover:shadow-sm transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
                   >
                     <div>
                       <p className="font-mono font-bold text-neutral-900">{order.kode}</p>
@@ -302,7 +304,7 @@ export default function OrderStatusChecker() {
                       <span className="font-bold text-neutral-900">{formatRupiah(order.total)}</span>
                       <ChevronRight size={20} className="text-neutral-400" />
                     </div>
-                  </div>
+                  </button>
                 ))}
               </div>
             </>
@@ -319,6 +321,17 @@ export default function OrderStatusChecker() {
             </div>
           )}
         </div>
+      )}
+
+      {result && history.length > 0 && (
+        <button
+          type="button"
+          onClick={() => { setResult(null); setError(""); }}
+          className="mb-3 inline-flex items-center gap-1.5 font-body text-sm font-semibold text-neutral-600 hover:text-primary"
+        >
+          <ChevronLeft size={16} />
+          Semua pesanan
+        </button>
       )}
 
       {result && (
@@ -338,7 +351,7 @@ export default function OrderStatusChecker() {
                 </span>
               )}
             </div>
-            <span className="font-mono text-sm font-bold text-[#D63E4D] bg-[#fae4e8] px-4 py-1.5 rounded-lg">
+            <span className="font-mono text-sm font-bold text-primary bg-primary/10 px-4 py-1.5 rounded-lg">
               {result.kode_pesanan}
             </span>
           </div>
@@ -353,8 +366,13 @@ export default function OrderStatusChecker() {
             <div className="space-y-4">
               <p className="text-xs font-bold text-neutral-400 uppercase tracking-wider mb-2">Ringkasan Pembelanjaan</p>
               {result.items.map((item, idx) => (
-                <div key={idx} className="flex justify-between text-base text-neutral-800 items-center">
-                  <span className="font-medium">{item.product_name} <span className="text-neutral-400 ml-1">× {item.qty}</span></span>
+                <div key={idx} className="flex justify-between gap-4 text-base text-neutral-800 items-center">
+                  <span className="font-medium">
+                    {item.product_name} <span className="text-neutral-400 ml-1">× {item.qty}</span>
+                    {item.variant_label && (
+                      <span className="block text-xs font-normal text-neutral-500">{item.variant_label}</span>
+                    )}
+                  </span>
                   <span className="font-bold">{formatRupiah(item.subtotal)}</span>
                 </div>
               ))}
@@ -365,7 +383,7 @@ export default function OrderStatusChecker() {
             {/* Total */}
             <div className="flex justify-between items-center font-bold">
               <span className="text-lg text-neutral-900">Total Pembayaran</span>
-              <span className="text-2xl text-[#D63E4D]">{formatRupiah(result.total_amount)}</span>
+              <span className="text-2xl text-primary">{formatRupiah(result.total_amount)}</span>
             </div>
 
             {/* Tombol bayar — hanya muncul jika masih pending & snap_token tersedia */}
@@ -374,7 +392,7 @@ export default function OrderStatusChecker() {
                 <button
                   onClick={handlePayNow}
                   disabled={payLoading}
-                  className="w-full flex items-center justify-center gap-2 bg-[#E77F86] hover:bg-[#D66D74] disabled:opacity-60 text-white font-bold text-lg py-4 rounded-2xl transition-colors"
+                  className="w-full flex items-center justify-center gap-2 bg-primary hover:bg-primary-dark disabled:opacity-60 text-white font-bold text-lg py-4 rounded-2xl transition-colors"
                 >
                   {payLoading
                     ? <><Loader2 size={20} className="animate-spin" /> Membuka pembayaran…</>
@@ -386,8 +404,34 @@ export default function OrderStatusChecker() {
 
             {/* Pesan jika pending tapi token sudah expired */}
             {result.status === "menunggu_pembayaran" && !result.snap_token && (
-              <div className="bg-[#fae4e8]/50 border border-[#fae4e8] rounded-2xl px-6 py-4 text-sm text-[#D63E4D] leading-relaxed text-center mt-4">
-                <strong>Token pembayaran sudah kedaluwarsa.</strong> Silakan hubungi admin atau buat pesanan baru.
+              <div className="bg-primary/5 border border-primary/15 rounded-2xl px-6 py-4 text-sm text-primary leading-relaxed text-center mt-4">
+                <strong>Token pembayaran sudah kedaluwarsa.</strong>{" "}
+                {whatsappLink() ? (
+                  <a
+                    href={whatsappLink(`Halo, token pembayaran pesanan ${result.kode_pesanan} kedaluwarsa.`)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="font-semibold underline underline-offset-2"
+                  >
+                    Hubungi admin via WhatsApp
+                  </a>
+                ) : (
+                  "Silakan hubungi admin"
+                )}{" "}
+                atau buat pesanan baru.
+              </div>
+            )}
+
+            {/* Lokasi pengambilan — tampil setelah pesanan dibayar */}
+            {result.status === "lunas" && STORE_INFO.address && (
+              <div className="rounded-2xl border border-neutral-200 bg-neutral-50 px-5 py-4 text-sm text-neutral-700">
+                <p className="font-semibold text-neutral-900">Ambil pesanan di</p>
+                <p className="mt-0.5">{STORE_INFO.address}</p>
+                {STORE_INFO.mapsUrl && (
+                  <a href={STORE_INFO.mapsUrl} target="_blank" rel="noopener noreferrer" className="mt-1 inline-block font-semibold text-primary underline underline-offset-2">
+                    Buka di Google Maps
+                  </a>
+                )}
               </div>
             )}
           </div>

@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useCartStore } from "../store/cartStore";
 import { formatRupiah } from "../utils/formatCurrency";
 import { isValidPhoneNumber } from "../utils/validators";
-import { User, Phone, QrCode, X, Clock, CreditCard } from "lucide-react";
+import { User, Phone, QrCode, Clock, CreditCard, ShoppingBag } from "lucide-react";
 import { supabase } from "../lib/supabaseClient";
 import { loadSnap } from "../utils/loadSnap";
 import { pollOrderStatus } from "../utils/orderStatusApi";
@@ -73,7 +73,7 @@ function SnapClosedModal({ kode, total, onPayNow, onPayLater }) {
           <div className="flex flex-col gap-2">
             <button
               onClick={onPayNow}
-              className="w-full flex items-center justify-center gap-2 bg-[#E77F86] hover:bg-[#D66D74] text-white font-bold py-3 rounded-xl transition-colors"
+              className="w-full flex items-center justify-center gap-2 bg-primary hover:bg-primary-dark text-white font-bold py-3 rounded-xl transition-colors"
             >
               <CreditCard size={18} />
               Bayar Sekarang
@@ -92,7 +92,7 @@ function SnapClosedModal({ kode, total, onPayNow, onPayLater }) {
 }
 
 /* ─── Main Component ────────────────────────────────────────── */
-export default function CheckoutForm({ onBack, onSuccess }) {
+export default function CheckoutForm({ onBack, onSuccess, onPayLater }) {
   const { items, getTotal, clearCart } = useCartStore();
   const [form, setForm] = useState(() => {
     const saved = getCustomerProfile();
@@ -102,6 +102,8 @@ export default function CheckoutForm({ onBack, onSuccess }) {
   const [loading, setLoading] = useState(false);
   const [serverError, setServerError] = useState("");
   const [pendingModal, setPendingModal] = useState(null); // { snapToken, kode, orderId, phone, total }
+  // true sejak pesanan dibuat — keranjang sudah dikosongkan, jadi jangan tampilkan empty state
+  const [orderInProgress, setOrderInProgress] = useState(false);
 
   function validate() {
     const e = {};
@@ -127,30 +129,32 @@ export default function CheckoutForm({ onBack, onSuccess }) {
 
     // Pantau pembayaran via Edge Function (kode + no HP), bukan Realtime anon.
     let finished = false;
-    function finishSuccess() {
+    // paid=true: pembayaran terkonfirmasi; paid=false: Midtrans melaporkan pending
+    // (mis. QRIS sudah dibuat tapi belum dibayar) — jangan ditampilkan sebagai sukses.
+    function finish(paid) {
       if (finished) return;
       finished = true;
       stopPolling();
       localStorage.setItem(LAST_ORDER_KEY, JSON.stringify({ kode, hp: phone }));
-      saveOrderToHistory({ kode, hp: phone, total, date: new Date().toISOString() });
       saveCustomerProfile(form);
-      clearPendingPayment();
+      if (paid) clearPendingPayment();
+      else savePendingPayment({ snapToken, kode, hp: phone, orderId, total });
       clearCart();
-      onSuccess(kode);
+      onSuccess(kode, { paid });
     }
 
     const stopPolling = pollOrderStatus(kode, phone, (order) => {
       if (order.status === "lunas") {
         if (window.snap && typeof window.snap.hide === "function") window.snap.hide();
-        finishSuccess();
+        finish(true);
         return true;
       }
       return false;
     });
 
     window.snap.pay(snapToken, {
-      onSuccess: finishSuccess,
-      onPending: finishSuccess,
+      onSuccess: () => finish(true),
+      onPending: () => finish(false),
       onError: () => {
         stopPolling();
         setServerError("Pembayaran gagal, silakan coba lagi.");
@@ -232,7 +236,15 @@ export default function CheckoutForm({ onBack, onSuccess }) {
         return;
       }
 
-      // Kosongkan keranjang karena pesanan SUDAH MASUK ke database dengan sukses
+      // Pesanan sudah tersimpan di DB: catat ke riwayat perangkat SEKARANG (bukan
+      // menunggu bayar), supaya pesanan "Bayar Nanti" tetap muncul di Pesanan Saya.
+      saveOrderToHistory({
+        kode: data.kode_pesanan,
+        hp: form.customer_phone.trim(),
+        total: data.total_amount,
+        date: new Date().toISOString(),
+      });
+      setOrderInProgress(true);
       clearCart();
 
       openSnap({
@@ -260,7 +272,27 @@ export default function CheckoutForm({ onBack, onSuccess }) {
   /* Handler modal: Bayar Nanti */
   function handlePayLater() {
     setPendingModal(null);
-    // Data sudah tersimpan di localStorage oleh onClose, tidak perlu aksi lagi
+    // Pesanan sudah ada di riwayat — arahkan ke Pesanan Saya agar bisa dibayar nanti
+    if (onPayLater) onPayLater();
+  }
+
+  // Checkout dibuka dengan keranjang kosong (bukan karena pesanan baru dibuat)
+  if (items.length === 0 && !orderInProgress && !pendingModal) {
+    return (
+      <div className="mx-auto max-w-md px-4 py-16 text-center">
+        <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-neutral-100">
+          <ShoppingBag size={28} className="text-neutral-400" />
+        </div>
+        <h2 className="font-display text-xl font-bold text-neutral-900">Keranjang masih kosong</h2>
+        <p className="mt-1 font-body text-sm text-neutral-500">Pilih menu dulu sebelum checkout.</p>
+        <button
+          onClick={onBack}
+          className="mt-6 rounded-xl bg-primary px-6 py-3 font-body text-sm font-semibold text-white hover:bg-primary-dark"
+        >
+          Lihat Menu
+        </button>
+      </div>
+    );
   }
 
   return (
@@ -378,7 +410,7 @@ export default function CheckoutForm({ onBack, onSuccess }) {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full flex items-center justify-center gap-2 bg-[#E77F86] hover:bg-[#D66D74] disabled:opacity-50 text-white font-bold py-3.5 rounded-xl transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+                className="w-full flex items-center justify-center gap-2 bg-primary hover:bg-primary-dark disabled:opacity-50 text-white font-bold py-3.5 rounded-xl transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
               >
                 <QrCode size={20} />
                 {loading ? "Memproses..." : "Bayar Sekarang"}

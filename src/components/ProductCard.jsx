@@ -9,7 +9,7 @@ import toast from "react-hot-toast";
 
 // Badge status stok — hanya tampil saat ada urgensi (habis / stok menipis)
 function getStockBadge(product) {
-  if (product.stock <= 0) return { label: "Habis", className: "bg-neutral-900/80 text-white" };
+  if (product.stock <= 0) return null; // stok habis sudah ditandai overlay "Stok Habis"
   if (product.stock <= 5) return { label: "Stok Terbatas", className: "bg-secondary text-neutral-900" };
   return null;
 }
@@ -30,8 +30,12 @@ export default function ProductCard({ product }) {
       openModal(product.id);
       return;
     }
-    addItem(product, 1);
-    toast.success("Berhasil ditambahkan ke keranjang!");
+    const added = addItem(product, 1);
+    if (added > 0) {
+      toast.success("Berhasil ditambahkan ke keranjang!");
+    } else {
+      toast.error(`Stok ${product.name} tinggal ${product.stock}, semuanya sudah di keranjang`);
+    }
   }
 
   return (
@@ -79,6 +83,9 @@ export default function ProductCard({ product }) {
         </Link>
 
         <span className="mt-1 font-display text-base font-extrabold tabular-nums text-primary sm:text-lg">
+          {hasVariants && (
+            <span className="mr-1 font-body text-xs font-semibold text-neutral-500">Mulai</span>
+          )}
           {formatRupiah(displayPrice)}
         </span>
       </div>
@@ -91,7 +98,7 @@ export default function ProductCard({ product }) {
           disabled={isOutOfStock}
           className="flex h-11 w-full items-center justify-center rounded-xl bg-primary font-body text-sm font-bold text-white transition-all hover:bg-primary-dark active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:bg-neutral-300 disabled:text-neutral-500"
         >
-          Tambah
+          {isOutOfStock ? "Habis" : hasVariants ? "Pilih" : "Tambah"}
         </button>
       </div>
     </div>

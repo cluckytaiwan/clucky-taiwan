@@ -26,7 +26,7 @@ function useMediaQuery(query) {
 }
 
 export default function VariantBottomSheet() {
-  const { isOpen, closeModal, productId, preselectVariantIds, referenceBudget, otherVariantItems } = useVariantModalStore();
+  const { isOpen, closeModal, openModal, productId, preselectVariantIds, referenceBudget, otherVariantItems, queue } = useVariantModalStore();
   
   const [product, setProduct] = useState(null);
   const [variants, setVariants] = useState([]);
@@ -140,7 +140,7 @@ export default function VariantBottomSheet() {
       .filter((t) => selectedVariants[t])
       .map((t) => selectedVariants[t].id);
 
-    addItem(
+    const added = addItem(
       {
         id: product.id,
         name: product.name,
@@ -154,9 +154,35 @@ export default function VariantBottomSheet() {
       1
     );
 
+    if (added === 0) {
+      toast.error(`Stok ${product.name} tinggal ${product.stock}, semuanya sudah di keranjang`);
+      return;
+    }
+
+    // Paket berisi beberapa produk bervarian: lanjut ke produk berikutnya
+    if (queue.length > 0) {
+      const [next, ...rest] = queue;
+      toast.success(`${product.name} ditambahkan. Lanjut pilih varian ${next.name}.`);
+      openModal(next.id, {
+        preselectVariantIds: next.preselectVariantIds,
+        referenceBudget,
+        otherVariantItems: rest.map((r) => r.name),
+        queue: rest,
+      });
+      return;
+    }
+
     toast.success("Berhasil ditambahkan ke keranjang!");
     closeModal();
   }
+
+  // Tutup modal desktop dengan tombol Esc (drawer HP sudah ditangani vaul)
+  useEffect(() => {
+    if (!isOpen || !isDesktop) return;
+    const onKey = (e) => { if (e.key === "Escape") closeModal(); };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [isOpen, isDesktop, closeModal]);
 
   // Komponen isi modal yang akan di-render baik di Desktop Modal maupun Mobile Drawer
   const renderContent = () => {
@@ -208,7 +234,7 @@ export default function VariantBottomSheet() {
                 {product.name}
               </h2>
               <p className="text-[13px] sm:text-sm font-medium text-neutral-500 mt-0.5">
-                Pilih ukuran & rasa
+                Pilih {variantTypes.map((t) => t.toLowerCase()).join(" & ") || "varian"}
               </p>
             </div>
           </div>
@@ -227,7 +253,7 @@ export default function VariantBottomSheet() {
           {otherVariantItems.length > 0 && (
             <div className="flex items-center gap-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2.5 text-[13px] font-medium text-amber-800">
               <Tag size={14} className="shrink-0" />
-              <span>Paket ini juga berisi {otherVariantItems.join(", ")}. Jangan lupa tambahkan setelah ini.</span>
+              <span>Setelah ini kamu lanjut memilih varian untuk {otherVariantItems.join(", ")}.</span>
             </div>
           )}
 
@@ -246,6 +272,7 @@ export default function VariantBottomSheet() {
                     <button
                       key={v.id}
                       type="button"
+                      aria-pressed={isSelected}
                       onClick={() => selectVariant(tipe, v)}
                       className={`rounded-2xl border-2 p-3 text-left transition-all duration-200 ${
                         isSelected
@@ -311,6 +338,9 @@ export default function VariantBottomSheet() {
     return (
       <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
         <div 
+          role="dialog"
+          aria-modal="true"
+          aria-label={product ? `Pilih varian ${product.name}` : "Pilih varian"}
           className="bg-white rounded-[24px] w-full max-w-[480px] shadow-2xl flex flex-col relative z-10"
           onClick={(e) => e.stopPropagation()}
         >

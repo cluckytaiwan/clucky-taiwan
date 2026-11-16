@@ -2,7 +2,7 @@ import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import {
   LayoutDashboard, Package, Tags, LogOut,
-  Bell, BellOff, ShoppingBag,
+  Bell, BellOff, ShoppingBag, Menu, X,
 } from "lucide-react";
 import { useAdminAuth } from "../context/AdminAuthContext";
 import { useOrderNotification } from "../context/OrderNotificationContext";
@@ -15,6 +15,10 @@ export default function AdminLayout() {
   const currentPath = location.pathname;
   const { logout } = useAdminAuth();
   const { isMuted, toggleMute } = useOrderNotification();
+
+  // Menu navigasi di HP: tertutup default agar konten langsung terlihat
+  const [menuOpen, setMenuOpen] = useState(false);
+  useEffect(() => { setMenuOpen(false); }, [currentPath]);
 
   // Badge: jumlah produk aktif dengan stok ≤ 10
   const [lowStockCount, setLowStockCount] = useState(0);
@@ -71,15 +75,17 @@ export default function AdminLayout() {
   return (
     <div className="min-h-screen bg-background flex flex-col md:flex-row">
       {/* Sidebar */}
-      <aside className="w-full md:w-64 bg-surface border-r border-neutral-200 shrink-0 flex flex-col">
+      <aside className="w-full md:w-64 bg-surface border-b md:border-b-0 md:border-r border-neutral-200 shrink-0 flex flex-col sticky top-0 z-20 md:static md:max-h-screen">
         {/* Logo + Mute */}
         <div className="p-4 border-b border-neutral-200 flex items-center justify-between">
           <span className="font-display text-xl font-extrabold tracking-tight text-primary">
             Clucky<span className="text-secondary">Admin</span>
           </span>
+          <div className="flex items-center gap-1">
           <button
             onClick={toggleMute}
             title={isMuted ? "Aktifkan notifikasi suara" : "Matikan notifikasi suara"}
+            aria-label={isMuted ? "Aktifkan notifikasi suara" : "Matikan notifikasi suara"}
             className={`
               p-2 rounded-xl transition-all duration-200 group relative
               ${isMuted
@@ -93,7 +99,18 @@ export default function AdminLayout() {
               {isMuted ? "Suara nonaktif" : "Suara aktif"}
             </span>
           </button>
+          <button
+            onClick={() => setMenuOpen((o) => !o)}
+            aria-label={menuOpen ? "Tutup menu" : "Buka menu"}
+            aria-expanded={menuOpen}
+            className="md:hidden p-2 rounded-xl text-neutral-700 hover:bg-neutral-100"
+          >
+            {menuOpen ? <X size={20} /> : <Menu size={20} />}
+          </button>
+          </div>
         </div>
+
+        <div className={`${menuOpen ? "flex" : "hidden"} md:flex flex-1 flex-col`}>
 
         {/* Nav */}
         <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
@@ -138,6 +155,7 @@ export default function AdminLayout() {
             <LogOut size={18} />
             Keluar
           </button>
+        </div>
         </div>
       </aside>
 

@@ -1,8 +1,7 @@
 // src/components/BudgetRecommender.jsx
 import { useState, useMemo, useCallback, useRef } from "react";
-import { useNavigate } from "react-router-dom";
 import { formatRupiah } from "../utils/formatCurrency";
-import { getRecommendations, getMinAvailablePrice } from "../utils/budgetRecommender";
+import { getRecommendations, getMinAvailablePrice, groupComboItems, MAIN_CATEGORIES } from "../utils/budgetRecommender";
 import { useCartStore } from "../store/cartStore";
 import { useVariantModalStore } from "../store/variantModalStore";
 import { getOptimizedImageUrl } from "../utils/imageUrl";
@@ -17,13 +16,14 @@ import "./BudgetRecommender.css";
 const BUDGET_PRESETS = [15_000, 25_000, 50_000, 75_000];
 const SLIDER_MAX = 100_000; // batas atas slider (bisa diketik lebih)
 const SLIDER_MIN_FALLBACK = 5_000;
+const MAX_BUDGET = 1_000_000; // batas input manual — di atas ini rekomendasi tidak bermakna
 
-// Badge terbaik per ranking
-const RANK_CONFIG = [
-  { label: "Pilihan Terbaik", icon: Star, color: "text-amber-600 bg-amber-100 border-amber-200", btnClass: "bg-primary hover:bg-primary-dark" },
-  { label: "Hemat Banget", icon: Zap, color: "text-emerald-700 bg-emerald-100 border-emerald-200", btnClass: "bg-emerald-600 hover:bg-emerald-700" },
-  { label: "Lebih Banyak", icon: TrendingUp, color: "text-violet-700 bg-violet-100 border-violet-200", btnClass: "bg-violet-600 hover:bg-violet-700" },
-];
+// Label per jenis rekomendasi (ditentukan algoritma, bukan urutan tampil)
+const KIND_CONFIG = {
+  best:  { label: "Paling Pas",   icon: Star,       color: "text-amber-600 bg-amber-100 border-amber-200",       btnClass: "bg-primary hover:bg-primary-dark" },
+  more:  { label: "Lebih Banyak", icon: TrendingUp, color: "text-violet-700 bg-violet-100 border-violet-200",    btnClass: "bg-violet-600 hover:bg-violet-700" },
+  saver: { label: "Lebih Hemat",  icon: Zap,        color: "text-emerald-700 bg-emerald-100 border-emerald-200", btnClass: "bg-emerald-600 hover:bg-emerald-700" },
+};
 
 // Warna progress bar berdasarkan efisiensi budget
 function getEfficiencyColor(efficiency) {
@@ -38,11 +38,15 @@ export default function BudgetRecommender({ products, onCartOpen }) {
   const [inputRaw, setInputRaw] = useState("");
   const [hasSearched, setHasSearched] = useState(false);
   const [inputError, setInputError] = useState("");
-  const [addedCombos, setAddedCombos] = useState(new Set());
-
-  const { addItem } = useCartStore();
+  const addItem = useCartStore((s) => s.addItem);
+  const cartItems = useCartStore((s) => s.items);
+  // Status "sudah di keranjang" diturunkan dari isi keranjang (bukan disimpan
+  // terpisah), supaya tombol paket kembali aktif saat item dihapus/keranjang dikosongkan.
+  const cartProductIds = useMemo(
+    () => new Set(cartItems.map((i) => i.product_id)),
+    [cartItems],
+  );
   const { openModal } = useVariantModalStore();
-  const navigate = useNavigate();
   const sliderRef = useRef(null);
 
   // Geser slider horizontal rekomendasi (kiri/kanan)
@@ -63,6 +67,14 @@ export default function BudgetRecommender({ products, onCartOpen }) {
     return getRecommendations(products, budget);
   }, [budget, products, minPrice]);
 
+  // Harga menu utama termurah — untuk menjelaskan kenapa yang muncul hanya camilan
+  const minMainPrice = useMemo(() => {
+    const prices = products
+      .filter((p) => p.is_active && p.stock > 0 && MAIN_CATEGORIES.includes(p.category))
+      .map((p) => p.min_price ?? p.price);
+    return prices.length ? Math.min(...prices) : null;
+  }, [products]);
+
   // ── Fill persen slider ────────────────────────────────────────────────────
   const sliderFillPercent = useMemo(
     () => Math.round(((Math.min(budget, maxPrice) - minPrice) / (maxPrice - minPrice)) * 100),
@@ -81,12 +93,21 @@ export default function BudgetRecommender({ products, onCartOpen }) {
   // ── Handler input manual ──────────────────────────────────────────────────
   const handleInputChange = useCallback((e) => {
     const raw = e.target.value.replace(/\D/g, "");
-    setInputRaw(raw ? Number(raw).toLocaleString("id-ID") : "");
-    const num = Number(raw);
+    let num = Number(raw);
+    if (num > MAX_BUDGET) {
+      num = MAX_BUDGET;
+      setInputError(`Budget maksimal ${formatRupiah(MAX_BUDGET)}`);
+    } else {
+      setInputError("");
+    }
+    setInputRaw(raw ? num.toLocaleString("id-ID") : "");
     if (num > 0) {
       setBudget(num);
-      setInputError("");
       if (!hasSearched) setHasSearched(true);
+    } else {
+      // Kolom dikosongkan → reset, jangan diam-diam memakai budget lama
+      setBudget(0);
+      setHasSearched(false);
     }
   }, [hasSearched]);
 
@@ -104,18 +125,18 @@ export default function BudgetRecommender({ products, onCartOpen }) {
   // Sebelumnya: kalau ada 1 saja produk bervarian dalam kombo, SEMUA item lain
   // (termasuk yang simple) diabaikan dan tidak pernah masuk keranjang.
   const handleBuyPackage = useCallback((comboItems) => {
-    const comboId = comboItems.map(i => i.id).sort().join("-");
+    // Hanya item yang belum ada di keranjang yang ditambahkan — mencegah qty dobel
+    // saat pelanggan menghapus sebagian item paket lalu memesan paket yang sama lagi.
+    const missingItems = comboItems.filter((item) => !cartProductIds.has(item.id));
 
-    // Jika kombo sudah ditambahkan di sesi ini, jangan tambah lagi, cukup buka keranjang
-    if (addedCombos.has(comboId)) {
+    if (missingItems.length === 0) {
       if (onCartOpen) onCartOpen();
       return;
     }
 
-    const variantItems = comboItems.filter((item) => item.has_variants);
-    const simpleItems = comboItems.filter((item) => !item.has_variants);
+    const variantItems = missingItems.filter((item) => item.has_variants);
+    const simpleItems = missingItems.filter((item) => !item.has_variants);
 
-    // Produk simple dalam kombo langsung masuk keranjang, apa pun kondisinya.
     simpleItems.forEach((item) =>
       addItem({
         id: item.id,
@@ -129,43 +150,34 @@ export default function BudgetRecommender({ products, onCartOpen }) {
       }, 1),
     );
 
-    // Tampilkan notifikasi toast
-    toast.success("Berhasil ditambahkan ke keranjang!");
-
-    // Tandai bahwa kombo ini sudah dimasukkan ke keranjang
-    setAddedCombos(prev => {
-      const next = new Set(prev);
-      next.add(comboId);
-      return next;
-    });
-
     if (variantItems.length > 0) {
-      const target = variantItems[0];
-
-      const otherVariantNames = variantItems.slice(1).map((v) => v.name);
-
       if (simpleItems.length > 0) {
-        toast.success(`${simpleItems.length} menu tanpa varian berhasil ditambahkan!`);
+        toast.success(`${simpleItems.length} menu ditambahkan, pilih varian untuk menu lainnya`);
       }
 
+      const target = variantItems[0];
       openModal(target.id, {
         preselectVariantIds: target.min_variant_ids ?? [],
         referenceBudget: budget,
-        otherVariantItems: otherVariantNames,
+        otherVariantItems: variantItems.slice(1).map((v) => v.name),
+        queue: variantItems.slice(1).map((v) => ({
+          id: v.id,
+          name: v.name,
+          preselectVariantIds: v.min_variant_ids ?? [],
+        })),
       });
-
       return;
     }
 
-    // Semua item simple — tidak perlu redirect, cukup buka keranjang.
+    toast.success("Berhasil ditambahkan ke keranjang!");
     if (onCartOpen) onCartOpen();
-  }, [addItem, navigate, onCartOpen, addedCombos]);
+  }, [addItem, openModal, onCartOpen, cartProductIds, budget]);
 
   // ── Apakah combo butuh pilih varian dulu? ────────────────────────────────
   const comboNeedsVariant = (items) => items.some((i) => i.has_variants);
 
   return (
-    <section className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
+    <section id="rekomendasi" className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8 scroll-mt-20">
       {/* ── Judul section ──────────────────────────────────────────────────── */}
       <div className="text-center mb-8">
         <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/20 text-primary font-semibold text-sm mb-4">
@@ -289,6 +301,7 @@ export default function BudgetRecommender({ products, onCartOpen }) {
                 <p className="text-xs font-bold text-neutral-400 uppercase tracking-widest">
                   {recommendations.length} Rekomendasi untuk {formatRupiah(budget)}
                 </p>
+                {recommendations.length > 1 && (
                 <div className="flex gap-2">
                   <button
                     type="button"
@@ -307,7 +320,14 @@ export default function BudgetRecommender({ products, onCartOpen }) {
                     <ChevronRight size={16} />
                   </button>
                 </div>
+                )}
               </div>
+
+              {recommendations[0]?.isSnackOnly && minMainPrice && (
+                <p className="mb-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-2.5 text-sm text-amber-800">
+                  Menu ayam mulai {formatRupiah(minMainPrice)}. Dengan budget ini, berikut pilihan camilan &amp; minuman.
+                </p>
+              )}
 
               <div className="relative">
                 <div
@@ -315,12 +335,11 @@ export default function BudgetRecommender({ products, onCartOpen }) {
                   className="flex gap-4 overflow-x-auto scroll-smooth snap-x snap-mandatory scrollbar-hide -mx-6 px-6 pb-4 sm:-mx-10 sm:px-10"
                 >
                   {recommendations.map((combo, idx) => {
-                    const rank = RANK_CONFIG[idx] ?? RANK_CONFIG[2];
+                    const rank = KIND_CONFIG[combo.kind] ?? KIND_CONFIG.best;
                     const RankIcon = rank.icon;
                     const needsVariant = comboNeedsVariant(combo.items);
                     const efficiency = Math.round((combo.totalPrice / budget) * 100);
-                    const comboId = combo.items.map(i => i.id).sort().join("-");
-                    const isAdded = addedCombos.has(comboId);
+                    const isAdded = combo.items.every((i) => cartProductIds.has(i.id));
 
                     return (
                       <div
@@ -330,7 +349,7 @@ export default function BudgetRecommender({ products, onCartOpen }) {
                       {/* Card header dengan badge ranking */}
                       <div className="px-4 pt-4 pb-3 border-b border-neutral-50">
                         <div className="flex items-center justify-between mb-1">
-                          <span className={`inline-flex items-center gap-1.5 text-[11px] font-bold px-2.5 py-1 rounded-full border ${rank.color} ${idx === 0 ? "badge-best" : ""}`}>
+                          <span className={`inline-flex items-center gap-1.5 text-[11px] font-bold px-2.5 py-1 rounded-full border ${rank.color} ${combo.kind === "best" ? "badge-best" : ""}`}>
                             <RankIcon size={10} />
                             {rank.label}
                           </span>
@@ -350,8 +369,8 @@ export default function BudgetRecommender({ products, onCartOpen }) {
 
                       {/* Daftar item */}
                       <div className="px-4 py-3 flex-1 space-y-3">
-                        {combo.items.map((item, i) => (
-                          <div key={i} className="flex items-center gap-3">
+                        {groupComboItems(combo.items).map(({ product: item, qty }) => (
+                          <div key={item.id} className="flex items-center gap-3">
                             {/* Thumbnail produk */}
                             {item.image_url ? (
                               <img
@@ -366,9 +385,14 @@ export default function BudgetRecommender({ products, onCartOpen }) {
                               </div>
                             )}
                             <div className="flex-1 min-w-0">
-                              <p className="text-sm font-semibold text-neutral-800 truncate">{item.name}</p>
+                              <p className="text-sm font-semibold text-neutral-800 truncate">
+                                {qty > 1 && <span className="text-primary">{qty}× </span>}
+                                {item.name}
+                              </p>
                               <div className="flex items-center gap-1.5">
-                                <p className="text-xs text-primary font-bold">{formatRupiah(item.price)}</p>
+                                <p className="text-xs text-primary font-bold">
+                                  {formatRupiah((item.min_price ?? item.price) * qty)}
+                                </p>
                                 {item.has_variants && (
                                   <span className="text-[10px] text-amber-500 font-semibold">+varian</span>
                                 )}
@@ -411,14 +435,22 @@ export default function BudgetRecommender({ products, onCartOpen }) {
                           </div>
                           {combo.leftover > 0 && !combo.isEstimate && (
                             <div className="text-right">
-                              <p className="text-[11px] text-neutral-400 mb-0.5">Kembalian</p>
+                              <p className="text-[11px] text-neutral-400 mb-0.5">Sisa budget</p>
                               <p className="text-sm font-bold text-success">{formatRupiah(combo.leftover)}</p>
                             </div>
                           )}
                         </div>
 
                         {/* CTA Button */}
-                        {needsVariant ? (
+                        {isAdded ? (
+                          <button
+                            onClick={() => handleBuyPackage(combo.items)}
+                            className="w-full flex items-center justify-center gap-2 bg-neutral-500 hover:bg-neutral-600 shadow-inner active:scale-95 text-white font-bold py-3 rounded-xl transition-all text-sm"
+                          >
+                            <ShoppingBag size={15} />
+                            Lihat Keranjang
+                          </button>
+                        ) : needsVariant ? (
                           <button
                             onClick={() => handleBuyPackage(combo.items)}
                             className="w-full flex items-center justify-center gap-2 bg-amber-500 hover:bg-amber-600 active:scale-95 text-white font-bold py-3 rounded-xl transition-all text-sm"
@@ -429,11 +461,10 @@ export default function BudgetRecommender({ products, onCartOpen }) {
                         ) : (
                           <button
                             onClick={() => handleBuyPackage(combo.items)}
-                            className={`w-full flex items-center justify-center gap-2 active:scale-95 text-white font-bold py-3 rounded-xl transition-all text-sm ${isAdded ? "bg-neutral-500 hover:bg-neutral-600 shadow-inner" : rank.btnClass
-                              }`}
+                            className={`w-full flex items-center justify-center gap-2 active:scale-95 text-white font-bold py-3 rounded-xl transition-all text-sm ${rank.btnClass}`}
                           >
                             <ShoppingBag size={15} />
-                            {isAdded ? "Lihat Keranjang" : "Pesan Sekarang"}
+                            Pesan Sekarang
                           </button>
                         )}
                       </div>
