@@ -27,7 +27,7 @@ function PendingPaymentBanner({ pending, onPayNow, onDismiss }) {
         <div className="flex items-center gap-2 shrink-0">
           <button
             onClick={onPayNow}
-            className="flex items-center gap-1.5 bg-[#E77F86] hover:bg-[#D66D74] text-white text-xs font-bold px-3.5 py-2 rounded-xl transition-colors"
+            className="flex items-center gap-1.5 bg-primary hover:bg-primary-dark text-white text-xs font-bold px-3.5 py-2 rounded-xl transition-colors"
           >
             <CreditCard size={14} />
             Lanjutkan Bayar

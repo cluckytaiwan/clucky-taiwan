@@ -73,7 +73,7 @@ function SnapClosedModal({ kode, total, onPayNow, onPayLater }) {
           <div className="flex flex-col gap-2">
             <button
               onClick={onPayNow}
-              className="w-full flex items-center justify-center gap-2 bg-[#E77F86] hover:bg-[#D66D74] text-white font-bold py-3 rounded-xl transition-colors"
+              className="w-full flex items-center justify-center gap-2 bg-primary hover:bg-primary-dark text-white font-bold py-3 rounded-xl transition-colors"
             >
               <CreditCard size={18} />
               Bayar Sekarang
@@ -410,7 +410,7 @@ export default function CheckoutForm({ onBack, onSuccess, onPayLater }) {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full flex items-center justify-center gap-2 bg-[#E77F86] hover:bg-[#D66D74] disabled:opacity-50 text-white font-bold py-3.5 rounded-xl transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+                className="w-full flex items-center justify-center gap-2 bg-primary hover:bg-primary-dark disabled:opacity-50 text-white font-bold py-3.5 rounded-xl transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
               >
                 <QrCode size={20} />
                 {loading ? "Memproses..." : "Bayar Sekarang"}

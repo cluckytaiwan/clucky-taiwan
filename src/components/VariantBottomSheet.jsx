@@ -176,6 +176,14 @@ export default function VariantBottomSheet() {
     closeModal();
   }
 
+  // Tutup modal desktop dengan tombol Esc (drawer HP sudah ditangani vaul)
+  useEffect(() => {
+    if (!isOpen || !isDesktop) return;
+    const onKey = (e) => { if (e.key === "Escape") closeModal(); };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [isOpen, isDesktop, closeModal]);
+
   // Komponen isi modal yang akan di-render baik di Desktop Modal maupun Mobile Drawer
   const renderContent = () => {
     if (loading) {
@@ -226,7 +234,7 @@ export default function VariantBottomSheet() {
                 {product.name}
               </h2>
               <p className="text-[13px] sm:text-sm font-medium text-neutral-500 mt-0.5">
-                Pilih ukuran & rasa
+                Pilih {variantTypes.map((t) => t.toLowerCase()).join(" & ") || "varian"}
               </p>
             </div>
           </div>
@@ -264,6 +272,7 @@ export default function VariantBottomSheet() {
                     <button
                       key={v.id}
                       type="button"
+                      aria-pressed={isSelected}
                       onClick={() => selectVariant(tipe, v)}
                       className={`rounded-2xl border-2 p-3 text-left transition-all duration-200 ${
                         isSelected
@@ -329,6 +338,9 @@ export default function VariantBottomSheet() {
     return (
       <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
         <div 
+          role="dialog"
+          aria-modal="true"
+          aria-label={product ? `Pilih varian ${product.name}` : "Pilih varian"}
           className="bg-white rounded-[24px] w-full max-w-[480px] shadow-2xl flex flex-col relative z-10"
           onClick={(e) => e.stopPropagation()}
         >
