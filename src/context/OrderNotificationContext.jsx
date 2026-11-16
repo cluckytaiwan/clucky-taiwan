@@ -35,17 +35,22 @@ try {
   }
 } catch {}
 
+const BASE_TITLE = "Clucky Admin";
+
 /**
- * playNotifSound — Generates a pleasant "ding" notification using Web Audio API.
- * Falls back silently if AudioContext is not available (e.g. in tests).
+ * playNotifSound — memutar bunyi notifikasi. Mengembalikan true bila berhasil.
+ * Browser memblokir audio sampai pengguna berinteraksi dengan halaman, jadi
+ * kegagalan (promise ditolak) harus ditangkap, bukan dibiarkan senyap.
  */
-function playNotifSound() {
+async function playNotifSound(volume = 0.7) {
   try {
     const audio = new Audio(notifSound);
-    audio.volume = 0.7; // 0.0 – 1.0
-    audio.play();
+    audio.volume = volume;
+    await audio.play();
+    return true;
   } catch (err) {
     console.warn("[OrderNotif] Audio playback blocked:", err.message);
+    return false;
   }
 }
 
@@ -54,6 +59,42 @@ export function OrderNotificationProvider({ children }) {
     () => localStorage.getItem(MUTE_KEY) === "true"
   );
   const [lastOrder, setLastOrder] = useState(null);
+  // false sampai pengguna berinteraksi — sebelum itu browser memblokir suara
+  const [soundReady, setSoundReady] = useState(false);
+  // Pesanan lunas baru yang belum dilihat (untuk judul tab)
+  const [unseenCount, setUnseenCount] = useState(0);
+
+  const clearUnseen = useCallback(() => setUnseenCount(0), []);
+
+  // Interaksi pertama di halaman membuka izin audio browser
+  useEffect(() => {
+    if (soundReady) return;
+    const unlock = () => setSoundReady(true);
+    window.addEventListener("pointerdown", unlock, { once: true });
+    window.addEventListener("keydown", unlock, { once: true });
+    return () => {
+      window.removeEventListener("pointerdown", unlock);
+      window.removeEventListener("keydown", unlock);
+    };
+  }, [soundReady]);
+
+  /** Dipanggil dari tombol "Aktifkan suara": sekaligus tes bunyi. */
+  const enableSound = useCallback(async () => {
+    const ok = await playNotifSound(0.4);
+    setSoundReady(true);
+    return ok;
+  }, []);
+
+  // Judul tab menampilkan jumlah pesanan baru agar terlihat walau tab lain sedang dibuka
+  useEffect(() => {
+    document.title = unseenCount > 0 ? `(${unseenCount}) Pesanan baru — ${BASE_TITLE}` : BASE_TITLE;
+  }, [unseenCount]);
+
+  // Kembalikan judul halaman publik saat keluar dari area admin
+  useEffect(() => {
+    const original = document.title;
+    return () => { document.title = original; };
+  }, []);
 
   const toggleMute = useCallback(() => {
     setIsMuted((prev) => {
@@ -118,6 +159,7 @@ export function OrderNotificationProvider({ children }) {
           // Tandai sudah diproses (sekali untuk selamanya)
           markOrderHandled(newOrder.id);
           setLastOrder(newOrder);
+          setUnseenCount((c) => c + 1);
 
           // Bunyikan suara jika tidak di-mute
           if (!isMutedRef.current) {
@@ -127,7 +169,7 @@ export function OrderNotificationProvider({ children }) {
           // Tampilkan popup notifikasi
           toast.custom(
             (t) => <OrderToast t={t} order={newOrder} />,
-            { duration: 6000, position: "top-right" }
+            { duration: 20000, position: "top-right" }
           );
         }
       )
@@ -146,7 +188,9 @@ export function OrderNotificationProvider({ children }) {
   }, [isMuted]);
 
   return (
-    <OrderNotificationContext.Provider value={{ isMuted, toggleMute, lastOrder }}>
+    <OrderNotificationContext.Provider
+      value={{ isMuted, toggleMute, lastOrder, soundReady, enableSound, unseenCount, clearUnseen }}
+    >
       {children}
     </OrderNotificationContext.Provider>
   );
