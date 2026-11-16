@@ -47,6 +47,7 @@ export default function AdminSales() {
   const salesLoading = useOrdersStore(s => s.salesLoading);
   const fetchSales   = useOrdersStore(s => s.fetchSales);
   const storeUpdateFulfillment = useOrdersStore(s => s.updateFulfillment);
+  const setFilters   = useOrdersStore(s => s.setFilters);
 
   // ── UI state lokal (bukan state orders) ──
   const [filterStatus,   setFilterStatus]   = useState("all");
@@ -55,10 +56,11 @@ export default function AdminSales() {
   const [sortAsc,        setSortAsc]        = useState(false);
   const [loadingId,      setLoadingId]      = useState(null);
 
-  // Fetch halaman pertama saat komponen mount
+  // Pencarian & filter status dijalankan di server (seluruh pesanan), debounce 300ms
   useEffect(() => {
-    fetchSales(0);
-  }, [fetchSales]);
+    const t = setTimeout(() => setFilters({ search: searchQuery, status: filterStatus }), 300);
+    return () => clearTimeout(t);
+  }, [searchQuery, filterStatus, setFilters]);
 
   // Sync selectedOrder saat orders di-update oleh realtime
   useEffect(() => {
@@ -81,7 +83,8 @@ export default function AdminSales() {
     setLoadingId(null);
   }
 
-  /* ─── Filter & Search (client-side pada halaman aktif) ─── */
+  /* ─── Filter & Search: server-side via store; filter lokal di bawah hanya
+         menjaga konsistensi saat pesanan baru masuk lewat realtime ─── */
   const filtered = orders
     .filter(o => filterStatus === "all" || o.status_pembayaran === filterStatus)
     .filter(o => {
@@ -144,6 +147,7 @@ export default function AdminSales() {
           {searchQuery && (
             <button
               onClick={() => setSearchQuery("")}
+              aria-label="Hapus pencarian"
               className="absolute right-2.5 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600"
             >
               <X size={14} />
@@ -172,7 +176,7 @@ export default function AdminSales() {
       {/* Info hasil search */}
       {searchQuery && (
         <p className="text-xs text-neutral-400">
-          {filtered.length} hasil untuk &ldquo;<strong className="text-neutral-600">{searchQuery}</strong>&rdquo;
+          {totalCount} hasil untuk &ldquo;<strong className="text-neutral-600">{searchQuery}</strong>&rdquo;
           {filterStatus !== "all" && ` dalam status ${PAYMENT_STATUS[filterStatus]?.label}`}
         </p>
       )}

@@ -30,6 +30,9 @@ export const useOrdersStore = create((set, get) => ({
   totalCount:   0,
   page:         0,
   salesLoading: true,
+  // Filter server-side untuk halaman Sales: pencarian & status bayar berlaku
+  // ke SELURUH pesanan, bukan hanya 25 baris di halaman aktif.
+  filters:      { search: "", status: "all" },
 
   /* ─── Sync signal untuk Dashboard ───────────────────────── */
   // Dashboard memonitor ini; setiap ada perubahan realtime → Dashboard refetch
@@ -46,17 +49,37 @@ export const useOrdersStore = create((set, get) => ({
     const from = pg * PAGE_SIZE;
     const to   = from + PAGE_SIZE - 1;
 
-    const { data, count } = await supabase
+    const { search, status } = get().filters;
+
+    let query = supabase
       .from("pesanan")
       .select("*, detail_pesanan(*, produk(nama_produk))", { count: "exact" })
       .order("created_at", { ascending: false })
       .range(from, to);
+
+    if (status !== "all") query = query.eq("status_pembayaran", status);
+
+    // Buang karakter yang punya arti khusus di filter PostgREST (koma, kurung, dll.)
+    const q = search.replace(/[^\p{L}\p{N}\s+-]/gu, "").trim();
+    if (q) {
+      query = query.or(
+        `nama_pelanggan.ilike.%${q}%,no_hp_pelanggan.ilike.%${q}%,kode_pesanan.ilike.%${q}%`,
+      );
+    }
+
+    const { data, count } = await query;
 
     set({
       orders:       data || [],
       totalCount:   count ?? get().totalCount,
       salesLoading: false,
     });
+  },
+
+  /* ─── Action: ubah filter lalu muat ulang dari halaman pertama ─── */
+  setFilters: (patch) => {
+    set(state => ({ filters: { ...state.filters, ...patch } }));
+    get().fetchSales(0);
   },
 
   /* ─── Action: update fulfillment (optimistic + DB) ──────── */
