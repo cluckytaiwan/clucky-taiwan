@@ -1,6 +1,6 @@
 // src/components/admin/OrderDetailModal.jsx
 import { useEffect } from "react";
-import { X, MessageCircle } from "lucide-react";
+import { X, MessageCircle, MapPin, StickyNote } from "lucide-react";
 import { formatRupiah } from "../../utils/formatCurrency";
 import FulfillmentDropdown from "./FulfillmentDropdown";
 import { PAYMENT_STATUS, formatOrderCode, formatOrderDate, customerWaLink } from "../../constants/adminOrder";
@@ -75,7 +75,7 @@ export default function OrderDetailModal({ order, onClose, onUpdate, loadingId }
             </div>
             {order.alamat_pelanggan && order.alamat_pelanggan !== "-" && (
               <p className="text-sm text-neutral-500 mt-0.5 flex gap-1.5">
-                <span>📍</span><span>{order.alamat_pelanggan}</span>
+                <MapPin size={14} className="mt-0.5 shrink-0" aria-hidden="true" /><span>{order.alamat_pelanggan}</span>
               </p>
             )}
           </div>
@@ -83,7 +83,7 @@ export default function OrderDetailModal({ order, onClose, onUpdate, loadingId }
           {/* Catatan */}
           {order.catatan && (
             <div className="flex gap-2.5 p-3 bg-amber-50 border border-amber-200 rounded-xl">
-              <span className="text-amber-500 shrink-0 mt-0.5">📝</span>
+              <StickyNote size={16} className="text-amber-600 shrink-0 mt-0.5" aria-hidden="true" />
               <div>
                 <p className="text-xs font-bold text-amber-700 uppercase tracking-widest mb-0.5">Catatan</p>
                 <p className="text-sm text-amber-900 leading-relaxed">{order.catatan}</p>

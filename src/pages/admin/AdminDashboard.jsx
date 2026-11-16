@@ -5,10 +5,7 @@ import { supabase } from "../../lib/supabaseClient";
 import { useOrdersStore } from "../../store/ordersStore";
 import { formatRupiah } from "../../utils/formatCurrency";
 import { downloadExcel } from "../../utils/exportExcel";
-import {
-  TrendingUp, ShoppingBag, Package, AlertTriangle,
-  Download, Loader2, RefreshCw, ChevronLeft, ChevronRight,
-} from "lucide-react";
+import { TrendingUp, ShoppingBag, Package, AlertTriangle, Download, Loader2, RefreshCw, ChevronLeft, ChevronRight, CheckCircle2 } from "lucide-react";
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid,
   Tooltip, ResponsiveContainer, BarChart, Bar,
@@ -591,7 +588,7 @@ export default function AdminDashboard() {
               {/* List produk stok rendah */}
               <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
                 {products.filter(p => p.stok <= 10 && p.aktif).length === 0 ? (
-                  <p className="text-sm text-neutral-300 text-center py-4">Semua stok aman ✓</p>
+                  <p className="flex items-center justify-center gap-1.5 text-sm text-neutral-500 py-4"><CheckCircle2 size={15} className="text-success" aria-hidden="true" />Semua stok aman</p>
                 ) : (
                   products.filter(p => p.stok <= 10 && p.aktif).slice(0, 8).map(p => (
                     <div key={p.id} className="flex items-center justify-between gap-2">

@@ -6,10 +6,7 @@ import { useCartStore } from "../store/cartStore";
 import { useVariantModalStore } from "../store/variantModalStore";
 import { getOptimizedImageUrl } from "../utils/imageUrl";
 import toast from "react-hot-toast";
-import {
-  Sparkles, ShoppingBag, ArrowRight, Tag,
-  ChevronRight, ChevronLeft, Star, Zap, TrendingUp,
-} from "lucide-react";
+import { Sparkles, ShoppingBag, ArrowRight, Tag, ChevronRight, ChevronLeft, Star, Zap, TrendingUp, Frown, SearchX } from "lucide-react";
 import "./BudgetRecommender.css";
 
 // ── Konstanta ──────────────────────────────────────────────────────────────
@@ -281,7 +278,7 @@ export default function BudgetRecommender({ products, onCartOpen }) {
           ) : budget < minPrice ? (
             /* Budget terlalu kecil */
             <div className="flex flex-col items-center justify-center py-10 text-center">
-              <div className="text-4xl mb-3">😢</div>
+              <Frown size={36} className="mb-3 text-neutral-400" aria-hidden="true" />
               <p className="font-bold text-neutral-800 mb-1">Budget belum cukup</p>
               <p className="text-sm text-neutral-500">
                 Minimal <span className="font-semibold text-primary">{formatRupiah(minPrice)}</span> untuk 1 porsi menu termurah kami.
@@ -290,7 +287,7 @@ export default function BudgetRecommender({ products, onCartOpen }) {
           ) : recommendations.length === 0 ? (
             /* Budget ada tapi tidak ada yang cocok */
             <div className="flex flex-col items-center justify-center py-10 text-center">
-              <div className="text-4xl mb-3">🤔</div>
+              <SearchX size={36} className="mb-3 text-neutral-400" aria-hidden="true" />
               <p className="font-bold text-neutral-800 mb-1">Belum ada kombinasi yang pas</p>
               <p className="text-sm text-neutral-500">Coba naikkan sedikit budget-mu.</p>
             </div>

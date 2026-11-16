@@ -2,7 +2,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "../../lib/supabaseClient";
 import { formatRupiah } from "../../utils/formatCurrency";
-import { ChevronDown, ChevronUp, Loader2 } from "lucide-react";
+import { ChevronDown, ChevronUp, Loader2, StickyNote } from "lucide-react";
 import SalesSummary from "../../components/admin/SalesSummary";
 import FulfillmentDropdown from "../../components/admin/FulfillmentDropdown";
 import OrderDetailModal from "../../components/admin/OrderDetailModal";
@@ -198,7 +198,7 @@ export default function AdminOrders() {
                               <span className="text-neutral-400 ml-1 text-xs">({first.kuantitas}x)</span>
                             </p>
                             {order.catatan && (
-                              <p className="text-xs text-amber-600 mt-0.5 line-clamp-1">📝 {order.catatan}</p>
+                              <p className="mt-0.5 flex items-start gap-1 text-xs text-amber-700"><StickyNote size={12} className="mt-0.5 shrink-0" aria-hidden="true" /><span className="line-clamp-1">{order.catatan}</span></p>
                             )}
                             {extra > 0 && (
                               <p className="text-xs text-neutral-400 mt-0.5">+{extra} lainnya</p>
