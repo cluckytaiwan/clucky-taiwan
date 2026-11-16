@@ -5,10 +5,7 @@ import { supabase } from "../../lib/supabaseClient";
 import { useOrdersStore } from "../../store/ordersStore";
 import { formatRupiah } from "../../utils/formatCurrency";
 import { downloadExcel } from "../../utils/exportExcel";
-import {
-  TrendingUp, ShoppingBag, Package, AlertTriangle,
-  Download, Loader2, RefreshCw, ChevronLeft, ChevronRight,
-} from "lucide-react";
+import { TrendingUp, ShoppingBag, Package, AlertTriangle, Download, Loader2, RefreshCw, ChevronLeft, ChevronRight, CheckCircle2 } from "lucide-react";
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid,
   Tooltip, ResponsiveContainer, BarChart, Bar,
@@ -409,7 +406,7 @@ export default function AdminDashboard() {
           label="Total Omzet Keseluruhan"
           value={formatRupiah(omzetAll)}
           sub={`${allLunas.length} transaksi lunas (Semua waktu)`}
-          color="bg-purple-100 text-purple-600"
+          color="bg-violet-100 text-violet-600"
           loading={loading}
         />
         <KpiCard
@@ -508,7 +505,7 @@ export default function AdminDashboard() {
                   <div key={p.name}>
                     <div className="flex justify-between items-center mb-1">
                       <div className="flex items-center gap-2 min-w-0">
-                        <span className="text-[10px] font-bold text-neutral-400 w-4 shrink-0">#{i + 1}</span>
+                        <span className="text-xs font-bold text-neutral-400 w-4 shrink-0">#{i + 1}</span>
                         <p className="text-sm font-medium text-neutral-800 truncate">{p.name}</p>
                       </div>
                       <span className="text-xs font-bold text-neutral-600 shrink-0 ml-2">{p.qty} unit</span>
@@ -583,7 +580,7 @@ export default function AdminDashboard() {
                 ].map(s => (
                   <div key={s.label} className="bg-neutral-50 rounded-xl p-2 text-center">
                     <p className={`font-bold text-lg ${s.color}`}>{s.val}</p>
-                    <p className="text-[10px] text-neutral-400">{s.label}</p>
+                    <p className="text-xs text-neutral-400">{s.label}</p>
                   </div>
                 ))}
               </div>
@@ -591,7 +588,7 @@ export default function AdminDashboard() {
               {/* List produk stok rendah */}
               <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
                 {products.filter(p => p.stok <= 10 && p.aktif).length === 0 ? (
-                  <p className="text-sm text-neutral-300 text-center py-4">Semua stok aman ✓</p>
+                  <p className="flex items-center justify-center gap-1.5 text-sm text-neutral-500 py-4"><CheckCircle2 size={15} className="text-success" aria-hidden="true" />Semua stok aman</p>
                 ) : (
                   products.filter(p => p.stok <= 10 && p.aktif).slice(0, 8).map(p => (
                     <div key={p.id} className="flex items-center justify-between gap-2">
@@ -638,7 +635,7 @@ export default function AdminDashboard() {
           <div className="overflow-x-auto">
             <table className="w-full text-sm border-collapse">
               <thead>
-                <tr className="bg-neutral-50 border-b border-neutral-100 text-[11px] uppercase tracking-widest text-neutral-400 font-bold">
+                <tr className="bg-neutral-50 border-b border-neutral-100 text-xs uppercase tracking-widest text-neutral-400 font-bold">
                   <th className="text-left px-5 py-3">Kode</th>
                   <th className="text-left px-5 py-3">Pelanggan</th>
                   <th className="text-left px-5 py-3">Item</th>

@@ -1,7 +1,7 @@
 // src/pages/admin/AdminProducts.jsx
 import { useEffect, useState, useMemo } from "react";
 import { supabase } from "../../lib/supabaseClient";
-import { Pencil, Trash2, Plus, X, Settings2, Search, AlertTriangle, PackageX, Power } from "lucide-react";
+import { Pencil, Trash2, Plus, X, Settings2, Search, Power } from "lucide-react";
 import toast from "react-hot-toast";
 import VariantManager from "../../components/admin/VariantManager";
 import StockStepper from "../../components/admin/StockStepper";
@@ -15,7 +15,7 @@ const emptyForm = {
 function StockBar({ stok }) {
   const max = 10;
   const pct = Math.min((stok / max) * 100, 100);
-  const color = stok === 0 ? "bg-danger" : stok <= 5 ? "bg-orange-500" : "bg-amber-400";
+  const color = stok === 0 ? "bg-danger" : stok <= 5 ? "bg-amber-500" : "bg-amber-400";
   return (
     <div className="w-20 h-1.5 bg-neutral-100 rounded-full overflow-hidden">
       <div className={`h-full rounded-full transition-all ${color}`} style={{ width: `${pct}%` }} />
@@ -248,7 +248,7 @@ export default function AdminProducts() {
     return product.image_url ? (
       <img src={product.image_url} alt="" className="w-12 h-12 object-cover rounded-lg border border-neutral-200 shrink-0" />
     ) : (
-      <div className="w-12 h-12 bg-neutral-100 rounded-lg border border-neutral-200 flex items-center justify-center text-[9px] text-neutral-400 font-medium shrink-0">Kosong</div>
+      <div className="w-12 h-12 bg-neutral-100 rounded-lg border border-neutral-200 flex items-center justify-center text-xs text-neutral-400 font-medium shrink-0">Kosong</div>
     );
   }
 
@@ -288,8 +288,8 @@ export default function AdminProducts() {
   /* ─── Filter pill config ─── */
   const filterOptions = [
     { key: "all",      label: "Semua",       count: null },
-    { key: "rendah",   label: "Stok Rendah", count: rendahCount,   icon: AlertTriangle, badgeClass: "bg-amber-100 text-amber-700" },
-    { key: "habis",    label: "Habis",       count: habisCount,    icon: PackageX,      badgeClass: "bg-red-100 text-danger" },
+    { key: "rendah",   label: "Stok Rendah", count: rendahCount,   badgeClass: "bg-amber-100 text-amber-700" },
+    { key: "habis",    label: "Habis",       count: habisCount,    badgeClass: "bg-red-100 text-danger" },
     { key: "nonaktif", label: "Nonaktif",    count: nonaktifCount, badgeClass: "bg-neutral-200 text-neutral-500" },
   ];
 
@@ -356,10 +356,9 @@ export default function AdminProducts() {
                 : "bg-surface text-neutral-500 border-neutral-200 hover:border-neutral-300 hover:text-neutral-700"
             }`}
           >
-            {opt.icon && filter !== opt.key && <opt.icon size={12} />}
             {opt.label}
             {opt.count != null && opt.count > 0 && (
-              <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${
+              <span className={`text-xs font-bold px-1.5 py-0.5 rounded-full ${
                 filter === opt.key ? "bg-white/20 text-white" : opt.badgeClass
               }`}>
                 {opt.count}
@@ -414,7 +413,7 @@ export default function AdminProducts() {
           <div className="hidden md:block overflow-x-auto">
             <table className="w-full text-sm border-collapse">
               <thead>
-                <tr className="bg-neutral-50 border-b border-neutral-200 text-[11px] uppercase tracking-widest text-neutral-500 font-bold">
+                <tr className="bg-neutral-50 border-b border-neutral-200 text-xs uppercase tracking-widest text-neutral-500 font-bold">
                   <th className="text-left px-5 py-3">Produk</th>
                   <th className="text-left px-5 py-3">Kategori</th>
                   <th className="text-right px-5 py-3">Harga</th>
@@ -519,7 +518,7 @@ export default function AdminProducts() {
                   }`}
                 />
                 {Number(form.stock) <= 10 && form.stock !== "" && (
-                  <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] font-bold text-amber-600">
+                  <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs font-bold text-amber-600">
                     {Number(form.stock) === 0 ? "HABIS" : "RENDAH"}
                   </span>
                 )}

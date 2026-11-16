@@ -1,6 +1,6 @@
 // src/components/admin/OrderDetailModal.jsx
 import { useEffect } from "react";
-import { X, MessageCircle } from "lucide-react";
+import { X, MessageCircle, MapPin, StickyNote } from "lucide-react";
 import { formatRupiah } from "../../utils/formatCurrency";
 import FulfillmentDropdown from "./FulfillmentDropdown";
 import { PAYMENT_STATUS, formatOrderCode, formatOrderDate, customerWaLink } from "../../constants/adminOrder";
@@ -38,7 +38,7 @@ export default function OrderDetailModal({ order, onClose, onUpdate, loadingId }
           <div>
             <div className="flex items-center gap-2">
               <p className="font-bold text-lg text-neutral-900 font-mono">{kode}</p>
-              <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-full border ${ps.badge}`}>
+              <span className={`text-xs font-semibold px-2 py-0.5 rounded-full border ${ps.badge}`}>
                 {ps.label}
               </span>
             </div>
@@ -57,7 +57,7 @@ export default function OrderDetailModal({ order, onClose, onUpdate, loadingId }
         <div className="overflow-y-auto px-6 py-5 space-y-5">
           {/* Pelanggan */}
           <div>
-            <p className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest mb-2">Pelanggan</p>
+            <p className="text-xs font-bold text-neutral-400 uppercase tracking-widest mb-2">Pelanggan</p>
             <p className="font-semibold text-neutral-900">{order.nama_pelanggan}</p>
             <div className="flex items-center gap-3">
               <p className="text-sm text-neutral-500">{order.no_hp_pelanggan}</p>
@@ -75,7 +75,7 @@ export default function OrderDetailModal({ order, onClose, onUpdate, loadingId }
             </div>
             {order.alamat_pelanggan && order.alamat_pelanggan !== "-" && (
               <p className="text-sm text-neutral-500 mt-0.5 flex gap-1.5">
-                <span>📍</span><span>{order.alamat_pelanggan}</span>
+                <MapPin size={14} className="mt-0.5 shrink-0" aria-hidden="true" /><span>{order.alamat_pelanggan}</span>
               </p>
             )}
           </div>
@@ -83,9 +83,9 @@ export default function OrderDetailModal({ order, onClose, onUpdate, loadingId }
           {/* Catatan */}
           {order.catatan && (
             <div className="flex gap-2.5 p-3 bg-amber-50 border border-amber-200 rounded-xl">
-              <span className="text-amber-500 shrink-0 mt-0.5">📝</span>
+              <StickyNote size={16} className="text-amber-600 shrink-0 mt-0.5" aria-hidden="true" />
               <div>
-                <p className="text-[10px] font-bold text-amber-700 uppercase tracking-widest mb-0.5">Catatan</p>
+                <p className="text-xs font-bold text-amber-700 uppercase tracking-widest mb-0.5">Catatan</p>
                 <p className="text-sm text-amber-900 leading-relaxed">{order.catatan}</p>
               </div>
             </div>
@@ -94,7 +94,7 @@ export default function OrderDetailModal({ order, onClose, onUpdate, loadingId }
           {/* Items */}
           <div className="rounded-xl border border-neutral-100 overflow-hidden">
             <div className="bg-neutral-50 px-4 py-2.5">
-              <p className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest">Item Pesanan</p>
+              <p className="text-xs font-bold text-neutral-400 uppercase tracking-widest">Item Pesanan</p>
             </div>
             <div className="divide-y divide-neutral-100">
               {order.detail_pesanan?.map((dp) => (
@@ -125,7 +125,7 @@ export default function OrderDetailModal({ order, onClose, onUpdate, loadingId }
           {/* Fulfillment dropdown di modal */}
           {isLunas && (
             <div>
-              <p className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest mb-2">Status Pengerjaan</p>
+              <p className="text-xs font-bold text-neutral-400 uppercase tracking-widest mb-2">Status Pengerjaan</p>
               <FulfillmentDropdown order={order} onUpdate={onUpdate} loadingId={loadingId} />
             </div>
           )}

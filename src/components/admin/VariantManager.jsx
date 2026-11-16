@@ -164,7 +164,7 @@ export default function VariantManager({ product, onClose }) {
           ) : (
             tipesSorted.map((tipe) => (
               <div key={tipe}>
-                <p className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest mb-2">
+                <p className="text-xs font-bold text-neutral-400 uppercase tracking-widest mb-2">
                   {tipeLabel[tipe] ?? tipe}
                 </p>
                 <div className="space-y-1.5">

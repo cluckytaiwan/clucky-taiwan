@@ -5,7 +5,7 @@ import { supabase } from "../../lib/supabaseClient";
 import { useCartStore } from "../../store/cartStore";
 import { formatRupiah } from "../../utils/formatCurrency";
 import { getOptimizedImageUrl } from "../../utils/imageUrl";
-import { ShoppingBag, ArrowLeft, Plus, Minus, CheckCircle2, Sparkles, Tag } from "lucide-react";
+import { ShoppingBag, ArrowLeft, Plus, Minus, CheckCircle2 } from "lucide-react";
 import CartDrawer from "../../components/CartDrawer";
 import toast from "react-hot-toast";
 
@@ -204,7 +204,7 @@ export default function ProductDetailPage() {
           >
             <ShoppingBag size={22} />
             {itemCount > 0 && (
-              <span className="absolute -right-0.5 -top-0.5 flex h-5 min-w-5 items-center justify-center rounded-full bg-primary px-1 font-body text-[11px] font-bold text-white">
+              <span className="absolute -right-0.5 -top-0.5 flex h-5 min-w-5 items-center justify-center rounded-full bg-primary px-1 font-body text-xs font-bold text-white">
                 {itemCount}
               </span>
             )}
@@ -216,7 +216,7 @@ export default function ProductDetailPage() {
       {(addedFromPackage > 0 || preselectVariantIds.length > 0) && !loading && !error && (
         <div className="mx-auto max-w-7xl px-4 pt-4 sm:px-6 lg:px-8 space-y-2">
           {addedFromPackage > 0 && (
-            <div className="flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
+            <div className="flex items-center gap-2 rounded-xl border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-800">
               <CheckCircle2 size={16} className="shrink-0" />
               <span>
                 {addedFromPackage} item lain dari paket rekomendasi sudah masuk keranjang.
@@ -226,7 +226,6 @@ export default function ProductDetailPage() {
           )}
           {preselectVariantIds.length > 0 && (
             <div className="flex items-center gap-2 rounded-xl border border-primary/20 bg-primary/5 px-4 py-3 text-sm text-primary">
-              <Sparkles size={16} className="shrink-0" />
               <span>
                 Varian sudah dipilihkan otomatis sesuai budget kamu. Kamu tetap bisa
                 mengganti pilihan, tapi harga akhirnya bisa berubah.
@@ -235,7 +234,6 @@ export default function ProductDetailPage() {
           )}
           {otherVariantItems.length > 0 && (
             <div className="flex items-center gap-2 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-              <Tag size={16} className="shrink-0" />
               <span>
                 Paket ini juga berisi {otherVariantItems.join(", ")} — tambahkan manual
                 ke keranjang setelah ini karena masing-masing perlu pilih varian sendiri.
@@ -257,7 +255,7 @@ export default function ProductDetailPage() {
             <Link to="/" className="mt-4 inline-block text-primary hover:underline">Kembali ke Beranda</Link>
           </div>
         ) : (
-          <div className="bg-white rounded-3xl shadow-sm border border-neutral-200 overflow-hidden lg:flex">
+          <div className="bg-white rounded-2xl shadow-sm border border-neutral-200 overflow-hidden lg:flex">
 
             {/* GAMBAR */}
             <div className="relative aspect-square w-full lg:w-1/2 bg-neutral-100">

@@ -2,7 +2,7 @@
 // Halaman Penjualan/Pemesanan — menggunakan shared ordersStore.
 // Default menampilkan antrean pesanan AKTIF (lunas & belum selesai), paling lama di atas.
 import { useEffect, useState } from "react";
-import { CheckCheck, ChevronDown, ChevronUp, Loader2, MessageCircle, Search, X } from "lucide-react";
+import { CheckCheck, ChevronDown, ChevronUp, Loader2, MessageCircle, Search, X, StickyNote } from "lucide-react";
 import toast from "react-hot-toast";
 import { formatRupiah } from "../../utils/formatCurrency";
 import FulfillmentAction from "../../components/admin/FulfillmentAction";
@@ -207,7 +207,7 @@ export default function AdminSales() {
             {searchQuery
               ? "Tidak ada pesanan yang cocok dengan pencarian."
               : filterStatus === "aktif"
-                ? "Tidak ada pesanan yang perlu dikerjakan. 🎉"
+                ? "Tidak ada pesanan yang perlu dikerjakan."
                 : "Tidak ada pesanan."}
           </p>
         </div>
@@ -236,7 +236,7 @@ export default function AdminSales() {
                       {label}{extra > 0 && <span className="text-neutral-400"> +{extra} lainnya</span>}
                     </p>
                     {order.catatan && (
-                      <p className="mt-1 text-xs text-amber-700 line-clamp-2">📝 {order.catatan}</p>
+                      <p className="mt-1 flex items-start gap-1 text-xs text-amber-700"><StickyNote size={12} className="mt-0.5 shrink-0" aria-hidden="true" /><span className="line-clamp-2">{order.catatan}</span></p>
                     )}
                   </button>
                   {order.status_pembayaran === "lunas" && (
@@ -264,7 +264,7 @@ export default function AdminSales() {
           <div className="hidden md:block overflow-x-auto">
             <table className="w-full text-sm border-collapse">
               <thead>
-                <tr className="bg-neutral-50 border-b border-neutral-200 text-[11px] uppercase tracking-widest text-neutral-500 font-bold">
+                <tr className="bg-neutral-50 border-b border-neutral-200 text-xs uppercase tracking-widest text-neutral-500 font-bold">
                   <th className="text-left px-5 py-3">
                     {filterStatus === "aktif" ? (
                       "Kode / Waktu"
@@ -305,9 +305,9 @@ export default function AdminSales() {
                       <td className="px-5 py-3.5" style={{ maxWidth: 220 }}>
                         <p className="text-neutral-800 text-sm line-clamp-1">{label}</p>
                         {order.catatan && (
-                          <p className="text-[11px] text-amber-700 mt-0.5 line-clamp-1">📝 {order.catatan}</p>
+                          <p className="mt-0.5 flex items-start gap-1 text-xs text-amber-700"><StickyNote size={12} className="mt-0.5 shrink-0" aria-hidden="true" /><span className="line-clamp-1">{order.catatan}</span></p>
                         )}
-                        {extra > 0 && <p className="text-[11px] text-neutral-500 mt-0.5">+{extra} lainnya</p>}
+                        {extra > 0 && <p className="text-xs text-neutral-500 mt-0.5">+{extra} lainnya</p>}
                       </td>
                       <td className="px-5 py-3.5 text-right whitespace-nowrap">
                         <span className="font-bold text-neutral-900">{formatRupiah(order.total_harga)}</span>

@@ -2,7 +2,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { statusLabel, fulfillmentLabel } from "../constants/orderStatus";
 import { formatRupiah } from "../utils/formatCurrency";
-import { CreditCard, Loader2, ChefHat, ShoppingBag, CheckCircle2, AlertCircle, XCircle, History, ChevronRight, ChevronLeft } from "lucide-react";
+import { Loader2, ChefHat, ShoppingBag, CheckCircle2, XCircle, History, ChevronRight, ChevronLeft, QrCode } from "lucide-react";
 import { clearPendingPayment } from "./CheckoutForm";
 import { loadSnap } from "../utils/loadSnap";
 import { getOrderHistory } from "../utils/storage";
@@ -42,7 +42,7 @@ function OrderProgress({ status, fulfillmentStatus, paidAt }) {
     { 
       id: 1, 
       label: "Menunggu Pembayaran", 
-      icon: CreditCard, 
+      icon: QrCode, 
       isActive: status === "menunggu_pembayaran", 
       isPast: status === "lunas" 
     },
@@ -133,17 +133,17 @@ function OrderProgress({ status, fulfillmentStatus, paidAt }) {
                 </div>
                 
                 <div className="mt-7 flex flex-col items-center text-center">
-                  <span className={`text-[11px] sm:text-xs leading-tight transition-colors duration-500 ${activeOrPast ? "font-bold text-neutral-900" : "font-medium text-neutral-500"}`}>
+                  <span className={`text-xs sm:text-xs leading-tight transition-colors duration-500 ${activeOrPast ? "font-bold text-neutral-900" : "font-medium text-neutral-500"}`}>
                     {step.label}
                   </span>
                   
                   {/* Badge "Sekarang" & Timer */}
                   <div className={`mt-2 flex flex-col items-center transition-all duration-500 ${step.isActive ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-2 pointer-events-none absolute"}`}>
-                    <span className="text-[10px] font-bold text-primary bg-primary/10 px-3 py-1 rounded-full whitespace-nowrap">
+                    <span className="text-xs font-bold text-primary bg-primary/10 px-3 py-1 rounded-full whitespace-nowrap">
                       Sekarang
                     </span>
                     {step.id === 2 && timeLeft && (
-                      <span className="text-[9px] text-primary font-bold mt-1.5 whitespace-nowrap bg-white border border-primary/15 px-2 py-0.5 rounded-md shadow-sm">
+                      <span className="text-xs text-primary font-bold mt-1.5 whitespace-nowrap bg-white border border-primary/15 px-2 py-0.5 rounded-md shadow-sm">
                         Estimasi: {timeLeft}
                       </span>
                     )}
@@ -335,17 +335,17 @@ export default function OrderStatusChecker() {
       )}
 
       {result && (
-        <div className="border border-neutral-200 rounded-3xl overflow-hidden bg-white shadow-sm">
+        <div className="border border-neutral-200 rounded-2xl overflow-hidden bg-white shadow-sm">
           {/* Header */}
           <div className="px-8 py-5 flex items-center justify-between border-b border-neutral-100 bg-white">
             <div className="flex items-center gap-2.5">
               <span className="text-base font-bold text-neutral-800">Detail Pesanan</span>
               {/* Indikator Live — muncul saat Supabase Realtime aktif */}
               {isLive && (
-                <span className="inline-flex items-center gap-1.5 text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full">
+                <span className="inline-flex items-center gap-1.5 text-xs font-bold text-green-700 bg-green-50 border border-green-200 px-2 py-0.5 rounded-full">
                   <span className="relative flex h-2 w-2">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                    <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
                   </span>
                   Live
                 </span>
@@ -396,7 +396,7 @@ export default function OrderStatusChecker() {
                 >
                   {payLoading
                     ? <><Loader2 size={20} className="animate-spin" /> Membuka pembayaran…</>
-                    : <><CreditCard size={20} /> Lanjutkan Pembayaran</>
+                    : <><QrCode size={20} /> Lanjutkan Pembayaran</>
                   }
                 </button>
               </div>
