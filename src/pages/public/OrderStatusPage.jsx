@@ -12,7 +12,7 @@ export default function OrderStatusPage() {
     <div className="min-h-dvh bg-background pt-8 flex flex-col">
       <button
         onClick={() => navigate("/")}
-        className="mx-auto mb-2 block max-w-md px-4 font-body text-sm text-neutral-500"
+        className="mx-auto mb-2 flex h-11 w-full max-w-3xl items-center px-4 sm:px-8 font-body text-sm text-neutral-600"
       >
         &larr; Kembali ke Beranda
       </button>

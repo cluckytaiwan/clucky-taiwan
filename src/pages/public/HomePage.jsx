@@ -53,7 +53,7 @@ export default function HomePage() {
           <div className="flex items-center gap-4 sm:gap-6">
             <button
               onClick={() => navigate("/cek-pesanan")}
-              className="font-body text-sm font-semibold text-neutral-600 hover:text-primary transition-colors"
+              className="inline-flex h-11 items-center px-2 font-body text-sm font-semibold text-neutral-600 hover:text-primary transition-colors"
             >
               Pesanan Saya
             </button>
@@ -141,7 +141,7 @@ export default function HomePage() {
                   key={cat}
                   onClick={() => setActiveCategory(cat)}
                   aria-pressed={activeCategory === cat}
-                  className={`px-4 py-2 rounded-full whitespace-nowrap text-sm font-semibold transition-colors ${activeCategory === cat
+                  className={`min-h-[44px] px-4 py-2 rounded-full whitespace-nowrap text-sm font-semibold transition-colors ${activeCategory === cat
                       ? "bg-primary text-white shadow-sm"
                       : "bg-neutral-100 text-neutral-600 hover:bg-neutral-200"
                     }`}

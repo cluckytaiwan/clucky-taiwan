@@ -44,7 +44,7 @@ export default function App() {
             color: '#fff',
           },
         }}
-        containerStyle={{ top: 16, right: 16 }}
+        containerStyle={{ bottom: "calc(5.5rem + env(safe-area-inset-bottom))" }}
       />
       <VariantBottomSheet />
       <AdminAuthProvider>
