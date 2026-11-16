@@ -6,7 +6,7 @@ import { useCartStore } from "../store/cartStore";
 import { useVariantModalStore } from "../store/variantModalStore";
 import { getOptimizedImageUrl } from "../utils/imageUrl";
 import toast from "react-hot-toast";
-import { Sparkles, ShoppingBag, ArrowRight, Tag, ChevronRight, ChevronLeft, Star, Zap, TrendingUp, Frown, SearchX } from "lucide-react";
+import { ShoppingBag, ArrowRight, ChevronRight, ChevronLeft, Star, Zap, TrendingUp, Frown, SearchX } from "lucide-react";
 import "./BudgetRecommender.css";
 
 // ── Konstanta ──────────────────────────────────────────────────────────────
@@ -355,7 +355,6 @@ export default function BudgetRecommender({ products, onCartOpen }) {
                         {/* Badge ada varian */}
                         {needsVariant && (
                           <span className="inline-flex items-center gap-1 text-xs font-semibold text-amber-700 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-full mt-1">
-                            <Tag size={9} />
                             Pilih Varian di Detail
                           </span>
                         )}
@@ -441,7 +440,6 @@ export default function BudgetRecommender({ products, onCartOpen }) {
                             onClick={() => handleBuyPackage(combo.items)}
                             className="w-full flex items-center justify-center gap-2 bg-neutral-500 hover:bg-neutral-600 shadow-inner active:scale-95 text-white font-bold py-3 rounded-xl transition-all text-sm"
                           >
-                            <ShoppingBag size={15} />
                             Lihat Keranjang
                           </button>
                         ) : needsVariant ? (
@@ -457,7 +455,6 @@ export default function BudgetRecommender({ products, onCartOpen }) {
                             onClick={() => handleBuyPackage(combo.items)}
                             className={`w-full flex items-center justify-center gap-2 active:scale-95 text-white font-bold py-3 rounded-xl transition-all text-sm ${rank.btnClass}`}
                           >
-                            <ShoppingBag size={15} />
                             Pesan Sekarang
                           </button>
                         )}
@@ -471,7 +468,6 @@ export default function BudgetRecommender({ products, onCartOpen }) {
               {/* Hint tambahan jika ada produk bervarian */}
               {/* {recommendations.some((c) => comboNeedsVariant(c.items)) && (
                 <p className="text-center text-xs text-neutral-400 mt-4 flex items-center justify-center gap-1.5">
-                  <Tag size={11} />
                   Produk bertanda <span className="font-semibold text-amber-600">+varian</span> perlu pilih ukuran/rasa di halaman detail
                 </p>
               )} */}

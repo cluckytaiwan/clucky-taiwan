@@ -5,7 +5,7 @@ import { supabase } from "../../lib/supabaseClient";
 import { useCartStore } from "../../store/cartStore";
 import { formatRupiah } from "../../utils/formatCurrency";
 import { getOptimizedImageUrl } from "../../utils/imageUrl";
-import { ShoppingBag, ArrowLeft, Plus, Minus, CheckCircle2, Sparkles, Tag } from "lucide-react";
+import { ShoppingBag, ArrowLeft, Plus, Minus, CheckCircle2 } from "lucide-react";
 import CartDrawer from "../../components/CartDrawer";
 import toast from "react-hot-toast";
 
@@ -226,7 +226,6 @@ export default function ProductDetailPage() {
           )}
           {preselectVariantIds.length > 0 && (
             <div className="flex items-center gap-2 rounded-xl border border-primary/20 bg-primary/5 px-4 py-3 text-sm text-primary">
-              <Sparkles size={16} className="shrink-0" />
               <span>
                 Varian sudah dipilihkan otomatis sesuai budget kamu. Kamu tetap bisa
                 mengganti pilihan, tapi harga akhirnya bisa berubah.
@@ -235,7 +234,6 @@ export default function ProductDetailPage() {
           )}
           {otherVariantItems.length > 0 && (
             <div className="flex items-center gap-2 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-              <Tag size={16} className="shrink-0" />
               <span>
                 Paket ini juga berisi {otherVariantItems.join(", ")} — tambahkan manual
                 ke keranjang setelah ini karena masing-masing perlu pilih varian sendiri.

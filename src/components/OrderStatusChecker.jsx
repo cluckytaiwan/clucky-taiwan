@@ -2,7 +2,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { statusLabel, fulfillmentLabel } from "../constants/orderStatus";
 import { formatRupiah } from "../utils/formatCurrency";
-import { CreditCard, Loader2, ChefHat, ShoppingBag, CheckCircle2, AlertCircle, XCircle, History, ChevronRight, ChevronLeft } from "lucide-react";
+import { Loader2, ChefHat, ShoppingBag, CheckCircle2, XCircle, History, ChevronRight, ChevronLeft, QrCode } from "lucide-react";
 import { clearPendingPayment } from "./CheckoutForm";
 import { loadSnap } from "../utils/loadSnap";
 import { getOrderHistory } from "../utils/storage";
@@ -42,7 +42,7 @@ function OrderProgress({ status, fulfillmentStatus, paidAt }) {
     { 
       id: 1, 
       label: "Menunggu Pembayaran", 
-      icon: CreditCard, 
+      icon: QrCode, 
       isActive: status === "menunggu_pembayaran", 
       isPast: status === "lunas" 
     },
@@ -396,7 +396,7 @@ export default function OrderStatusChecker() {
                 >
                   {payLoading
                     ? <><Loader2 size={20} className="animate-spin" /> Membuka pembayaran…</>
-                    : <><CreditCard size={20} /> Lanjutkan Pembayaran</>
+                    : <><QrCode size={20} /> Lanjutkan Pembayaran</>
                   }
                 </button>
               </div>

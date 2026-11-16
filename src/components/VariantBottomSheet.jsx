@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo } from "react";
 import { Drawer } from "vaul";
-import { X, Sparkles, Tag, Plus, ShoppingBag } from "lucide-react";
+import { X, ShoppingBag } from "lucide-react";
 import { supabase } from "../lib/supabaseClient";
 import { useCartStore } from "../store/cartStore";
 import { useVariantModalStore } from "../store/variantModalStore";
@@ -246,13 +246,11 @@ export default function VariantBottomSheet() {
           {/* Notifikasi Budget Recommender */}
           {preselectVariantIds.length > 0 && (
             <div className="flex items-center gap-2 rounded-xl border border-primary/20 bg-primary/5 px-3 py-2.5 text-[13px] font-medium text-primary">
-              <Sparkles size={14} className="shrink-0" />
               <span>Varian sudah dipilihkan otomatis sesuai budget kamu.</span>
             </div>
           )}
           {otherVariantItems.length > 0 && (
             <div className="flex items-center gap-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2.5 text-[13px] font-medium text-amber-800">
-              <Tag size={14} className="shrink-0" />
               <span>Setelah ini kamu lanjut memilih varian untuk {otherVariantItems.join(", ")}.</span>
             </div>
           )}
@@ -323,7 +321,6 @@ export default function VariantBottomSheet() {
             disabled={!canAdd}
             className="bg-primary hover:bg-primary-dark text-white font-bold text-sm px-5 sm:px-6 py-2.5 sm:py-3 rounded-xl flex items-center justify-center gap-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed active:scale-95"
           >
-            <Plus size={16} className="hidden sm:block" />
             <span>Tambah</span>
           </button>
         </div>

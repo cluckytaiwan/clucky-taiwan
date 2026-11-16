@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useCartStore } from "../store/cartStore";
 import { formatRupiah } from "../utils/formatCurrency";
 import { isValidPhoneNumber } from "../utils/validators";
-import { User, Phone, QrCode, Clock, CreditCard, ShoppingBag } from "lucide-react";
+import { QrCode, Clock, ShoppingBag } from "lucide-react";
 import { supabase } from "../lib/supabaseClient";
 import { loadSnap } from "../utils/loadSnap";
 import { pollOrderStatus } from "../utils/orderStatusApi";
@@ -75,7 +75,7 @@ function SnapClosedModal({ kode, total, onPayNow, onPayLater }) {
               onClick={onPayNow}
               className="w-full flex items-center justify-center gap-2 bg-primary hover:bg-primary-dark text-white font-bold py-3 rounded-xl transition-colors"
             >
-              <CreditCard size={18} />
+              <QrCode size={18} />
               Bayar Sekarang
             </button>
             <button
@@ -323,11 +323,11 @@ export default function CheckoutForm({ onBack, onSuccess, onPayLater }) {
             <div className="space-y-5">
               {/* Nama Pelanggan */}
               <div>
-                <label className="flex items-center gap-2 text-sm font-semibold text-neutral-800 mb-2">
-                  <User size={16} className="text-neutral-500" />
+                <label htmlFor="co-name" className="block text-sm font-semibold text-neutral-800 mb-2">
                   Nama Pelanggan
                 </label>
                 <input
+                  id="co-name"
                   type="text"
                   value={form.customer_name}
                   onChange={(e) => setForm({ ...form, customer_name: e.target.value })}
@@ -339,11 +339,11 @@ export default function CheckoutForm({ onBack, onSuccess, onPayLater }) {
 
               {/* Nomor HP */}
               <div>
-                <label className="flex items-center gap-2 text-sm font-semibold text-neutral-800 mb-2">
-                  <Phone size={16} className="text-neutral-500" />
+                <label htmlFor="co-phone" className="block text-sm font-semibold text-neutral-800 mb-2">
                   Nomor HP
                 </label>
                 <input
+                  id="co-phone"
                   type="tel"
                   value={form.customer_phone}
                   onChange={(e) => setForm({ ...form, customer_phone: e.target.value })}

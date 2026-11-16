@@ -1,7 +1,7 @@
 // src/pages/admin/AdminProducts.jsx
 import { useEffect, useState, useMemo } from "react";
 import { supabase } from "../../lib/supabaseClient";
-import { Pencil, Trash2, Plus, X, Settings2, Search, AlertTriangle, PackageX, Power } from "lucide-react";
+import { Pencil, Trash2, Plus, X, Settings2, Search, Power } from "lucide-react";
 import toast from "react-hot-toast";
 import VariantManager from "../../components/admin/VariantManager";
 import StockStepper from "../../components/admin/StockStepper";
@@ -288,8 +288,8 @@ export default function AdminProducts() {
   /* ─── Filter pill config ─── */
   const filterOptions = [
     { key: "all",      label: "Semua",       count: null },
-    { key: "rendah",   label: "Stok Rendah", count: rendahCount,   icon: AlertTriangle, badgeClass: "bg-amber-100 text-amber-700" },
-    { key: "habis",    label: "Habis",       count: habisCount,    icon: PackageX,      badgeClass: "bg-red-100 text-danger" },
+    { key: "rendah",   label: "Stok Rendah", count: rendahCount,   badgeClass: "bg-amber-100 text-amber-700" },
+    { key: "habis",    label: "Habis",       count: habisCount,    badgeClass: "bg-red-100 text-danger" },
     { key: "nonaktif", label: "Nonaktif",    count: nonaktifCount, badgeClass: "bg-neutral-200 text-neutral-500" },
   ];
 
@@ -356,7 +356,6 @@ export default function AdminProducts() {
                 : "bg-surface text-neutral-500 border-neutral-200 hover:border-neutral-300 hover:text-neutral-700"
             }`}
           >
-            {opt.icon && filter !== opt.key && <opt.icon size={12} />}
             {opt.label}
             {opt.count != null && opt.count > 0 && (
               <span className={`text-xs font-bold px-1.5 py-0.5 rounded-full ${
