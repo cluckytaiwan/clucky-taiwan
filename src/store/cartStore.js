@@ -37,6 +37,7 @@ export const useCartStore = create(
        * @param {Object} product - harus include: id, name, price, stock, image_url
        *                           opsional: variant_ids[], variant_label, base_price
        * @param {number} qty
+       * @returns {number} jumlah yang benar-benar ditambahkan (bisa < qty / 0 jika stok habis)
        */
       addItem: (product, qty = 1) => {
         const variantIds = product.variant_ids ?? [];
@@ -55,6 +56,7 @@ export const useCartStore = create(
               i.cart_key === cartKey ? { ...i, qty: newQty } : i,
             ),
           });
+          return newQty - existing.qty;
         } else {
           set({
             items: [
@@ -73,6 +75,7 @@ export const useCartStore = create(
               },
             ],
           });
+          return Math.min(qty, product.stock);
         }
       },
 

@@ -16,6 +16,7 @@ import "./BudgetRecommender.css";
 const BUDGET_PRESETS = [15_000, 25_000, 50_000, 75_000];
 const SLIDER_MAX = 100_000; // batas atas slider (bisa diketik lebih)
 const SLIDER_MIN_FALLBACK = 5_000;
+const MAX_BUDGET = 1_000_000; // batas input manual — di atas ini rekomendasi tidak bermakna
 
 // Badge terbaik per ranking
 const RANK_CONFIG = [
@@ -84,11 +85,16 @@ export default function BudgetRecommender({ products, onCartOpen }) {
   // ── Handler input manual ──────────────────────────────────────────────────
   const handleInputChange = useCallback((e) => {
     const raw = e.target.value.replace(/\D/g, "");
-    setInputRaw(raw ? Number(raw).toLocaleString("id-ID") : "");
-    const num = Number(raw);
+    let num = Number(raw);
+    if (num > MAX_BUDGET) {
+      num = MAX_BUDGET;
+      setInputError(`Budget maksimal ${formatRupiah(MAX_BUDGET)}`);
+    } else {
+      setInputError("");
+    }
+    setInputRaw(raw ? num.toLocaleString("id-ID") : "");
     if (num > 0) {
       setBudget(num);
-      setInputError("");
       if (!hasSearched) setHasSearched(true);
     }
   }, [hasSearched]);
@@ -142,6 +148,11 @@ export default function BudgetRecommender({ products, onCartOpen }) {
         preselectVariantIds: target.min_variant_ids ?? [],
         referenceBudget: budget,
         otherVariantItems: variantItems.slice(1).map((v) => v.name),
+        queue: variantItems.slice(1).map((v) => ({
+          id: v.id,
+          name: v.name,
+          preselectVariantIds: v.min_variant_ids ?? [],
+        })),
       });
       return;
     }
@@ -154,7 +165,7 @@ export default function BudgetRecommender({ products, onCartOpen }) {
   const comboNeedsVariant = (items) => items.some((i) => i.has_variants);
 
   return (
-    <section className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
+    <section id="rekomendasi" className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8 scroll-mt-20">
       {/* ── Judul section ──────────────────────────────────────────────────── */}
       <div className="text-center mb-8">
         <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/20 text-primary font-semibold text-sm mb-4">

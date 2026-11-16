@@ -26,7 +26,7 @@ function useMediaQuery(query) {
 }
 
 export default function VariantBottomSheet() {
-  const { isOpen, closeModal, productId, preselectVariantIds, referenceBudget, otherVariantItems } = useVariantModalStore();
+  const { isOpen, closeModal, openModal, productId, preselectVariantIds, referenceBudget, otherVariantItems, queue } = useVariantModalStore();
   
   const [product, setProduct] = useState(null);
   const [variants, setVariants] = useState([]);
@@ -140,7 +140,7 @@ export default function VariantBottomSheet() {
       .filter((t) => selectedVariants[t])
       .map((t) => selectedVariants[t].id);
 
-    addItem(
+    const added = addItem(
       {
         id: product.id,
         name: product.name,
@@ -153,6 +153,24 @@ export default function VariantBottomSheet() {
       },
       1
     );
+
+    if (added === 0) {
+      toast.error(`Stok ${product.name} tinggal ${product.stock}, semuanya sudah di keranjang`);
+      return;
+    }
+
+    // Paket berisi beberapa produk bervarian: lanjut ke produk berikutnya
+    if (queue.length > 0) {
+      const [next, ...rest] = queue;
+      toast.success(`${product.name} ditambahkan. Lanjut pilih varian ${next.name}.`);
+      openModal(next.id, {
+        preselectVariantIds: next.preselectVariantIds,
+        referenceBudget,
+        otherVariantItems: rest.map((r) => r.name),
+        queue: rest,
+      });
+      return;
+    }
 
     toast.success("Berhasil ditambahkan ke keranjang!");
     closeModal();
@@ -227,7 +245,7 @@ export default function VariantBottomSheet() {
           {otherVariantItems.length > 0 && (
             <div className="flex items-center gap-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2.5 text-[13px] font-medium text-amber-800">
               <Tag size={14} className="shrink-0" />
-              <span>Paket ini juga berisi {otherVariantItems.join(", ")}. Jangan lupa tambahkan setelah ini.</span>
+              <span>Setelah ini kamu lanjut memilih varian untuk {otherVariantItems.join(", ")}.</span>
             </div>
           )}
 

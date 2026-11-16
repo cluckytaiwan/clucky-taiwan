@@ -149,7 +149,7 @@ export default function ProductDetailPage() {
       .filter((t) => selectedVariants[t])
       .map((t) => selectedVariants[t].id);
 
-    addItem(
+    const added = addItem(
       {
         id: product.id,
         name: product.name,
@@ -164,7 +164,15 @@ export default function ProductDetailPage() {
     );
 
     setQty(1);
-    toast.success("Berhasil ditambahkan ke keranjang!");
+    if (added === 0) {
+      toast.error(`Stok ${product.name} tinggal ${product.stock}, semuanya sudah di keranjang`);
+      return;
+    }
+    if (added < qty) {
+      toast(`Hanya ${added} ditambahkan — stok tersisa ${product.stock}`, { icon: "ℹ️" });
+    } else {
+      toast.success("Berhasil ditambahkan ke keranjang!");
+    }
 
     // Feedback visual sesaat
     setAddedFeedback(true);

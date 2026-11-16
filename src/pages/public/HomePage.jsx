@@ -70,7 +70,7 @@ export default function HomePage() {
       </header>
 
       {/* ===== HERO SECTION ===== */}
-      <section className="relative min-h-[500px] sm:min-h-[600px] flex items-center overflow-hidden bg-neutral-900">
+      <section className="relative min-h-[420px] sm:min-h-[600px] flex items-center overflow-hidden bg-neutral-900">
         <img
           src={heroImage}
           alt="Ayam Goreng Taiwan"
@@ -78,7 +78,7 @@ export default function HomePage() {
         />
         <div className="absolute inset-0 bg-gradient-to-r from-neutral-900/90 via-neutral-900/60 to-transparent" />
 
-        <div className="relative z-10 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+        <div className="relative z-10 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-16">
           <span className="inline-block rounded-full bg-primary px-4 py-1.5 font-body text-[13px] font-bold text-white tracking-wide">
             Autentik Taiwan
           </span>
@@ -92,8 +92,8 @@ export default function HomePage() {
             <a href="#katalog" className="h-[52px] px-8 flex items-center justify-center rounded-2xl bg-primary font-body text-[15px] font-bold text-white hover:bg-primary-dark transition-all active:scale-95 shadow-lg shadow-primary/20">
               Pesan Sekarang
             </a>
-            <a href="#katalog" className="h-[52px] px-8 flex items-center justify-center rounded-2xl border border-white/20 bg-white/5 backdrop-blur-md font-body text-[15px] font-bold text-white hover:bg-white/10 transition-all active:scale-95">
-              Lihat Menu
+            <a href="#rekomendasi" className="h-[52px] px-8 flex items-center justify-center rounded-2xl border border-white/20 bg-white/5 backdrop-blur-md font-body text-[15px] font-bold text-white hover:bg-white/10 transition-all active:scale-95">
+              Cari Paket Sesuai Budget
             </a>
           </div>
         </div>
@@ -111,7 +111,7 @@ export default function HomePage() {
       )}
 
       {/* ===== GRID KATALOG PRODUK ===== */}
-      <section id="katalog" className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
+      <section id="katalog" className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8 scroll-mt-20">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
           <h2 className="font-display text-2xl font-bold text-neutral-900">Menu Kami</h2>
 
@@ -146,7 +146,7 @@ export default function HomePage() {
         {/* Error state */}
         {error && !loading && (
           <p className="text-center font-body text-sm text-danger">
-            Gagal memuat menu: {error}
+            Gagal memuat menu. Periksa koneksi internet lalu muat ulang halaman.
           </p>
         )}
 
