@@ -9,7 +9,7 @@ export default function OrderStatusPage() {
   usePageTitle("Pesanan Saya");
 
   return (
-    <div className="min-h-screen bg-background pt-8 flex flex-col">
+    <div className="min-h-dvh bg-background pt-8 flex flex-col">
       <button
         onClick={() => navigate("/")}
         className="mx-auto mb-2 block max-w-md px-4 font-body text-sm text-neutral-500"

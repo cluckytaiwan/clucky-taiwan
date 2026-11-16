@@ -385,7 +385,7 @@ export default function CheckoutForm({ onBack, onSuccess, onPayLater }) {
             <div className="bg-white border border-neutral-200 rounded-2xl p-6 shadow-sm sticky top-24">
               <h3 className="text-lg font-bold font-display text-neutral-900 mb-6">Ringkasan Belanja</h3>
 
-              <div className="space-y-4 max-h-[40vh] overflow-y-auto pr-2 mb-6">
+              <div className="space-y-4 max-h-[40dvh] overflow-y-auto pr-2 mb-6">
                 {items.map((item) => (
                   <div key={item.product_id} className="flex justify-between items-start">
                     <div>

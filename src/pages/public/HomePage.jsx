@@ -37,7 +37,7 @@ export default function HomePage() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-dvh bg-background">
       {/* Skip to content - accessibility */}
       <a href="#katalog" className="skip-to-content font-body">
         Langsung ke Menu

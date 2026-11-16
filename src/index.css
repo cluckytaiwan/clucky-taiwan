@@ -64,3 +64,25 @@ body {
     transition-duration: 0.01ms !important;
   }
 }
+
+/* ── Mobile ─────────────────────────────────────────────────────────────── */
+/* Area aman iPhone (notch di landscape); bawah ditangani per komponen dengan env() */
+body {
+  padding-left: env(safe-area-inset-left);
+  padding-right: env(safe-area-inset-right);
+}
+
+/* iOS Safari memperbesar halaman otomatis saat input bertulisan < 16px difokuskan.
+   Paksa 16px di layar kecil; ukuran desktop tidak berubah. */
+@media (max-width: 639px) {
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]),
+  select,
+  textarea {
+    font-size: 16px !important;
+  }
+}
+
+/* Hilangkan jeda 300ms & zoom dobel-ketuk pada tombol/tautan */
+button, a, [role="button"], input, select, textarea, label {
+  touch-action: manipulation;
+}

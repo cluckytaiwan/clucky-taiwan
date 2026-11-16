@@ -190,7 +190,7 @@ export default function ProductDetailPage() {
   const tipeLabel = { ukuran: "Ukuran", rasa: "Rasa" };
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
+    <div className="min-h-dvh bg-background flex flex-col">
       {/* HEADER */}
       <header className="sticky top-0 z-30 border-b border-neutral-200 bg-background/95 backdrop-blur">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 sm:px-6 lg:px-8">

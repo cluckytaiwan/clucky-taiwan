@@ -1,5 +1,7 @@
 /** @type {import('tailwindcss').Config} */
 export default {
+  // hover: hanya berlaku di perangkat dengan kursor; di layar sentuh efeknya tidak "menempel" setelah ketuk
+  future: { hoverOnlyWhenSupported: true },
   content: ["./index.html", "./src/**/*.{js,jsx}"],
   theme: {
     extend: {

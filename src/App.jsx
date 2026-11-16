@@ -25,7 +25,7 @@ const AdminLayout = lazy(() => import("./layouts/AdminLayout"));
 
 function AdminFallback() {
   return (
-    <div className="flex min-h-screen items-center justify-center font-body text-neutral-500">
+    <div className="flex min-h-dvh items-center justify-center font-body text-neutral-500">
       Memuat...
     </div>
   );

@@ -237,7 +237,7 @@ export default function VariantBottomSheet() {
         </div>
 
         {/* ── Body (Varian) ── */}
-        <div className="px-5 sm:px-6 py-2 overflow-y-auto max-h-[60vh] sm:max-h-[50vh] space-y-6">
+        <div className="px-5 sm:px-6 py-2 overflow-y-auto max-h-[60dvh] sm:max-h-[50dvh] space-y-6">
           
           {/* Notifikasi Budget Recommender */}
           {preselectVariantIds.length > 0 && (
@@ -353,7 +353,7 @@ export default function VariantBottomSheet() {
     <Drawer.Root open={isOpen} onOpenChange={(open) => !open && closeModal()} direction="bottom">
       <Drawer.Portal>
         <Drawer.Overlay className="fixed inset-0 z-[100] bg-black/50 backdrop-blur-sm" />
-        <Drawer.Content className="fixed inset-x-0 bottom-0 z-[100] flex max-h-[90vh] flex-col rounded-t-2xl bg-white shadow-xl outline-none">
+        <Drawer.Content className="fixed inset-x-0 bottom-0 z-[100] flex max-h-[90dvh] flex-col rounded-t-2xl bg-white shadow-xl outline-none">
           {/* Handle for Drawer */}
           <Drawer.Title className="sr-only">
             {product ? `Pilih varian ${product.name}` : "Pilih varian"}

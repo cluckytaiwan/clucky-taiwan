@@ -111,7 +111,7 @@ export default function CheckoutPage() {
   if (completed) {
     const { kode, paid } = completed;
     return (
-      <main className="min-h-screen bg-background flex items-center justify-center px-4">
+      <main className="min-h-dvh bg-background flex items-center justify-center px-4">
         <div className="max-w-sm text-center" role="status">
           {paid ? (
             <CheckCircle2 className="mx-auto text-success" size={64} />
@@ -157,7 +157,7 @@ export default function CheckoutPage() {
   }
 
   return (
-    <main className="min-h-screen bg-background py-8">
+    <main className="min-h-dvh bg-background py-8">
       <h1 className="sr-only">Checkout</h1>
       <PendingPaymentBanner
         pending={pendingPayment}
