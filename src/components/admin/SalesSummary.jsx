@@ -12,7 +12,7 @@ export default function SalesSummary({ orders }) {
       {[
         { icon: <PackageOpen size={20} />, color: "bg-blue-100 text-blue-600",    label: "Pesanan Lunas",   val: settled.length,    rupiah: false },
         { icon: <DollarSign  size={20} />, color: "bg-green-100 text-green-600",  label: "Total Pendapatan",val: totalRevenue,      rupiah: true  },
-        { icon: <Clock       size={20} />, color: "bg-orange-100 text-orange-600",label: "Sedang Diproses", val: inProgress.length, rupiah: false },
+        { icon: <Clock       size={20} />, color: "bg-amber-100 text-amber-600",label: "Sedang Diproses", val: inProgress.length, rupiah: false },
       ].map((c) => (
         <div key={c.label} className="bg-surface border border-neutral-200 rounded-xl p-4 flex items-center gap-3.5">
           <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${c.color}`}>{c.icon}</div>

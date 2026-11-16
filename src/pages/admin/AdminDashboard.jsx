@@ -409,7 +409,7 @@ export default function AdminDashboard() {
           label="Total Omzet Keseluruhan"
           value={formatRupiah(omzetAll)}
           sub={`${allLunas.length} transaksi lunas (Semua waktu)`}
-          color="bg-purple-100 text-purple-600"
+          color="bg-violet-100 text-violet-600"
           loading={loading}
         />
         <KpiCard

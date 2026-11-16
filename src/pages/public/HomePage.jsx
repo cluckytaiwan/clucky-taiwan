@@ -89,10 +89,10 @@ export default function HomePage() {
             Renyah di luar, juicy di dalam. Dibuat dengan resep asli Taiwan yang bikin ketagihan!
           </p>
           <div className="mt-8 flex flex-wrap gap-4">
-            <a href="#katalog" className="h-[52px] px-8 flex items-center justify-center rounded-2xl bg-primary font-body text-[15px] font-bold text-white hover:bg-primary-dark transition-all active:scale-95 shadow-lg shadow-primary/20">
+            <a href="#katalog" className="h-[52px] px-8 flex items-center justify-center rounded-xl bg-primary font-body text-[15px] font-bold text-white hover:bg-primary-dark transition-all active:scale-95 shadow-lg shadow-primary/20">
               Pesan Sekarang
             </a>
-            <a href="#rekomendasi" className="h-[52px] px-8 flex items-center justify-center rounded-2xl border border-white/20 bg-white/5 backdrop-blur-md font-body text-[15px] font-bold text-white hover:bg-white/10 transition-all active:scale-95">
+            <a href="#rekomendasi" className="h-[52px] px-8 flex items-center justify-center rounded-xl border border-white/20 bg-white/5 backdrop-blur-md font-body text-[15px] font-bold text-white hover:bg-white/10 transition-all active:scale-95">
               Cari Paket Sesuai Budget
             </a>
           </div>

@@ -277,7 +277,7 @@ export default function VariantBottomSheet() {
                       className={`rounded-2xl border-2 p-3 text-left transition-all duration-200 ${
                         isSelected
                           ? "border-primary bg-primary/5"
-                          : "border-orange-50 bg-[#FDF8F3] hover:border-orange-100 hover:bg-[#faeedd]"
+                          : "border-neutral-200 bg-neutral-50 hover:border-neutral-300 hover:bg-neutral-100"
                       }`}
                     >
                       <p className={`font-bold text-[13px] sm:text-sm leading-tight ${isSelected ? "text-primary" : "text-neutral-800"}`}>
@@ -302,7 +302,7 @@ export default function VariantBottomSheet() {
         </div>
 
         {/* ── Footer ── */}
-        <div className="p-5 sm:p-6 pt-4 sm:pt-4 mt-2 sm:mt-2 border-t border-neutral-100 flex flex-row items-center justify-between gap-4 bg-white rounded-b-[24px]">
+        <div className="p-5 sm:p-6 pt-4 sm:pt-4 mt-2 sm:mt-2 border-t border-neutral-100 flex flex-row items-center justify-between gap-4 bg-white rounded-b-2xl">
           <div>
             <p className="text-xs sm:text-xs font-medium text-neutral-500 mb-0.5">Total</p>
             <p className="text-lg sm:text-xl font-bold font-display text-primary tracking-tight">
@@ -341,7 +341,7 @@ export default function VariantBottomSheet() {
           role="dialog"
           aria-modal="true"
           aria-label={product ? `Pilih varian ${product.name}` : "Pilih varian"}
-          className="bg-white rounded-[24px] w-full max-w-[480px] shadow-2xl flex flex-col relative z-10"
+          className="bg-white rounded-2xl w-full max-w-[480px] shadow-2xl flex flex-col relative z-10"
           onClick={(e) => e.stopPropagation()}
         >
           {renderContent()}
@@ -358,7 +358,7 @@ export default function VariantBottomSheet() {
     <Drawer.Root open={isOpen} onOpenChange={(open) => !open && closeModal()} direction="bottom">
       <Drawer.Portal>
         <Drawer.Overlay className="fixed inset-0 z-[100] bg-black/50 backdrop-blur-sm" />
-        <Drawer.Content className="fixed inset-x-0 bottom-0 z-[100] flex max-h-[90vh] flex-col rounded-t-[24px] bg-white shadow-xl outline-none">
+        <Drawer.Content className="fixed inset-x-0 bottom-0 z-[100] flex max-h-[90vh] flex-col rounded-t-2xl bg-white shadow-xl outline-none">
           {/* Handle for Drawer */}
           <div className="mx-auto mt-4 h-1.5 w-12 rounded-full bg-neutral-300" />
           

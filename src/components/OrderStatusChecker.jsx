@@ -335,17 +335,17 @@ export default function OrderStatusChecker() {
       )}
 
       {result && (
-        <div className="border border-neutral-200 rounded-3xl overflow-hidden bg-white shadow-sm">
+        <div className="border border-neutral-200 rounded-2xl overflow-hidden bg-white shadow-sm">
           {/* Header */}
           <div className="px-8 py-5 flex items-center justify-between border-b border-neutral-100 bg-white">
             <div className="flex items-center gap-2.5">
               <span className="text-base font-bold text-neutral-800">Detail Pesanan</span>
               {/* Indikator Live — muncul saat Supabase Realtime aktif */}
               {isLive && (
-                <span className="inline-flex items-center gap-1.5 text-xs font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full">
+                <span className="inline-flex items-center gap-1.5 text-xs font-bold text-green-700 bg-green-50 border border-green-200 px-2 py-0.5 rounded-full">
                   <span className="relative flex h-2 w-2">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                    <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
                   </span>
                   Live
                 </span>

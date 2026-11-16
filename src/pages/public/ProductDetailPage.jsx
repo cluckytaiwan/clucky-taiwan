@@ -216,7 +216,7 @@ export default function ProductDetailPage() {
       {(addedFromPackage > 0 || preselectVariantIds.length > 0) && !loading && !error && (
         <div className="mx-auto max-w-7xl px-4 pt-4 sm:px-6 lg:px-8 space-y-2">
           {addedFromPackage > 0 && (
-            <div className="flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
+            <div className="flex items-center gap-2 rounded-xl border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-800">
               <CheckCircle2 size={16} className="shrink-0" />
               <span>
                 {addedFromPackage} item lain dari paket rekomendasi sudah masuk keranjang.
@@ -257,7 +257,7 @@ export default function ProductDetailPage() {
             <Link to="/" className="mt-4 inline-block text-primary hover:underline">Kembali ke Beranda</Link>
           </div>
         ) : (
-          <div className="bg-white rounded-3xl shadow-sm border border-neutral-200 overflow-hidden lg:flex">
+          <div className="bg-white rounded-2xl shadow-sm border border-neutral-200 overflow-hidden lg:flex">
 
             {/* GAMBAR */}
             <div className="relative aspect-square w-full lg:w-1/2 bg-neutral-100">

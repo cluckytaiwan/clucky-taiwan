@@ -30,7 +30,7 @@ body {
 }
 
 .animated-dash {
-  background-image: linear-gradient(90deg, #D63E4D, #D63E4D 50%, transparent 50%, transparent 100%);
+  background-image: linear-gradient(90deg, #D6293B, #D6293B 50%, transparent 50%, transparent 100%);
   background-size: 16px 3px;
   animation: move-dash 1s linear infinite;
 }

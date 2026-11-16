@@ -22,12 +22,12 @@ const MAX_BUDGET = 1_000_000; // batas input manual — di atas ini rekomendasi 
 const KIND_CONFIG = {
   best:  { label: "Paling Pas",   icon: Star,       color: "text-amber-600 bg-amber-100 border-amber-200",       btnClass: "bg-primary hover:bg-primary-dark" },
   more:  { label: "Lebih Banyak", icon: TrendingUp, color: "text-violet-700 bg-violet-100 border-violet-200",    btnClass: "bg-violet-600 hover:bg-violet-700" },
-  saver: { label: "Lebih Hemat",  icon: Zap,        color: "text-emerald-700 bg-emerald-100 border-emerald-200", btnClass: "bg-emerald-600 hover:bg-emerald-700" },
+  saver: { label: "Lebih Hemat",  icon: Zap,        color: "text-green-700 bg-green-100 border-green-200", btnClass: "bg-green-600 hover:bg-green-700" },
 };
 
 // Warna progress bar berdasarkan efisiensi budget
 function getEfficiencyColor(efficiency) {
-  if (efficiency >= 90) return "bg-emerald-500";
+  if (efficiency >= 90) return "bg-green-500";
   if (efficiency >= 70) return "bg-primary";
   if (efficiency >= 50) return "bg-amber-400";
   return "bg-neutral-300";
@@ -192,7 +192,7 @@ export default function BudgetRecommender({ products, onCartOpen }) {
       </div>
 
       {/* ── Panel Utama ─────────────────────────────────────────────────────── */}
-      <div className="rounded-3xl bg-gradient-to-br from-primary/8 via-white to-secondary/8 border border-neutral-200/80 shadow-sm overflow-hidden">
+      <div className="rounded-2xl bg-gradient-to-br from-primary/5 via-white to-secondary/10 border border-neutral-200/80 shadow-sm overflow-hidden">
 
         {/* ── Budget Input Area ───────────────────────────────────────────── */}
         <div className="px-6 pt-8 pb-6 sm:px-10 bg-white/60 border-b border-neutral-100">

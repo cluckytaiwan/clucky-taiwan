@@ -15,7 +15,7 @@ const emptyForm = {
 function StockBar({ stok }) {
   const max = 10;
   const pct = Math.min((stok / max) * 100, 100);
-  const color = stok === 0 ? "bg-danger" : stok <= 5 ? "bg-orange-500" : "bg-amber-400";
+  const color = stok === 0 ? "bg-danger" : stok <= 5 ? "bg-amber-500" : "bg-amber-400";
   return (
     <div className="w-20 h-1.5 bg-neutral-100 rounded-full overflow-hidden">
       <div className={`h-full rounded-full transition-all ${color}`} style={{ width: `${pct}%` }} />
