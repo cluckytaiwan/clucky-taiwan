@@ -60,7 +60,7 @@ export default function ProductCard({ product }) {
 
         {/* Badge status stok — pojok kiri atas, hanya saat urgensi */}
         {stockBadge && (
-          <span className={`absolute left-2 top-2 rounded-full px-2.5 py-1 font-body text-[11px] font-bold shadow-sm ${stockBadge.className}`}>
+          <span className={`absolute left-2 top-2 rounded-full px-2.5 py-1 font-body text-xs font-bold shadow-sm ${stockBadge.className}`}>
             {stockBadge.label}
           </span>
         )}

@@ -508,7 +508,7 @@ export default function AdminDashboard() {
                   <div key={p.name}>
                     <div className="flex justify-between items-center mb-1">
                       <div className="flex items-center gap-2 min-w-0">
-                        <span className="text-[10px] font-bold text-neutral-400 w-4 shrink-0">#{i + 1}</span>
+                        <span className="text-xs font-bold text-neutral-400 w-4 shrink-0">#{i + 1}</span>
                         <p className="text-sm font-medium text-neutral-800 truncate">{p.name}</p>
                       </div>
                       <span className="text-xs font-bold text-neutral-600 shrink-0 ml-2">{p.qty} unit</span>
@@ -583,7 +583,7 @@ export default function AdminDashboard() {
                 ].map(s => (
                   <div key={s.label} className="bg-neutral-50 rounded-xl p-2 text-center">
                     <p className={`font-bold text-lg ${s.color}`}>{s.val}</p>
-                    <p className="text-[10px] text-neutral-400">{s.label}</p>
+                    <p className="text-xs text-neutral-400">{s.label}</p>
                   </div>
                 ))}
               </div>
@@ -638,7 +638,7 @@ export default function AdminDashboard() {
           <div className="overflow-x-auto">
             <table className="w-full text-sm border-collapse">
               <thead>
-                <tr className="bg-neutral-50 border-b border-neutral-100 text-[11px] uppercase tracking-widest text-neutral-400 font-bold">
+                <tr className="bg-neutral-50 border-b border-neutral-100 text-xs uppercase tracking-widest text-neutral-400 font-bold">
                   <th className="text-left px-5 py-3">Kode</th>
                   <th className="text-left px-5 py-3">Pelanggan</th>
                   <th className="text-left px-5 py-3">Item</th>

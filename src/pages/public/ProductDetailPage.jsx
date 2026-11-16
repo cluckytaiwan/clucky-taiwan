@@ -204,7 +204,7 @@ export default function ProductDetailPage() {
           >
             <ShoppingBag size={22} />
             {itemCount > 0 && (
-              <span className="absolute -right-0.5 -top-0.5 flex h-5 min-w-5 items-center justify-center rounded-full bg-primary px-1 font-body text-[11px] font-bold text-white">
+              <span className="absolute -right-0.5 -top-0.5 flex h-5 min-w-5 items-center justify-center rounded-full bg-primary px-1 font-body text-xs font-bold text-white">
                 {itemCount}
               </span>
             )}

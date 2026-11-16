@@ -110,7 +110,7 @@ export default function AdminLayout() {
             `}
           >
             {isMuted ? <BellOff size={16} /> : <Bell size={16} />}
-            <span className="absolute right-full mr-2 top-1/2 -translate-y-1/2 bg-neutral-800 text-white text-[11px] font-medium px-2 py-1 rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+            <span className="absolute right-full mr-2 top-1/2 -translate-y-1/2 bg-neutral-800 text-white text-xs font-medium px-2 py-1 rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
               {isMuted ? "Suara nonaktif" : "Suara aktif"}
             </span>
           </button>
@@ -146,7 +146,7 @@ export default function AdminLayout() {
             {activeCount > 0 && (
               <span
                 aria-label={`${activeCount} pesanan perlu diproses`}
-                className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${
+                className={`text-xs font-bold px-1.5 py-0.5 rounded-full ${
                   currentPath === "/admin/sales" ? "bg-white/20 text-white" : "bg-blue-100 text-blue-700"
                 }`}
               >
@@ -170,7 +170,7 @@ export default function AdminLayout() {
             <Package size={18} />
             <span className="flex-1">Produk</span>
             {lowStockCount > 0 && (
-              <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${
+              <span className={`text-xs font-bold px-1.5 py-0.5 rounded-full ${
                 currentPath === "/admin/products"
                   ? "bg-white/20 text-white"
                   : "bg-amber-100 text-amber-700"

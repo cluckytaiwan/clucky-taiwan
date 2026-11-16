@@ -145,7 +145,7 @@ export default function AdminOrders() {
           <div className="overflow-x-auto">
             <table className="w-full text-sm border-collapse">
               <thead>
-                <tr className="bg-neutral-50 border-b border-neutral-200 text-[11px] uppercase tracking-widest text-neutral-400 font-bold">
+                <tr className="bg-neutral-50 border-b border-neutral-200 text-xs uppercase tracking-widest text-neutral-400 font-bold">
                   <th className="text-left px-5 py-3">
                     <button
                       className="flex items-center gap-1 hover:text-neutral-700 transition-colors"
@@ -198,10 +198,10 @@ export default function AdminOrders() {
                               <span className="text-neutral-400 ml-1 text-xs">({first.kuantitas}x)</span>
                             </p>
                             {order.catatan && (
-                              <p className="text-[11px] text-amber-600 mt-0.5 line-clamp-1">📝 {order.catatan}</p>
+                              <p className="text-xs text-amber-600 mt-0.5 line-clamp-1">📝 {order.catatan}</p>
                             )}
                             {extra > 0 && (
-                              <p className="text-[11px] text-neutral-400 mt-0.5">+{extra} lainnya</p>
+                              <p className="text-xs text-neutral-400 mt-0.5">+{extra} lainnya</p>
                             )}
                           </>
                         ) : (

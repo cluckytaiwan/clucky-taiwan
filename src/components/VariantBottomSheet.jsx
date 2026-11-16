@@ -260,7 +260,7 @@ export default function VariantBottomSheet() {
           {/* Selector Varian */}
           {variantTypes.map((tipe) => (
             <div key={tipe}>
-              <h3 className="text-[11px] sm:text-xs font-bold text-neutral-400 uppercase tracking-widest mb-3">
+              <h3 className="text-xs sm:text-xs font-bold text-neutral-400 uppercase tracking-widest mb-3">
                 {tipe}
               </h3>
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-3">
@@ -283,7 +283,7 @@ export default function VariantBottomSheet() {
                       <p className={`font-bold text-[13px] sm:text-sm leading-tight ${isSelected ? "text-primary" : "text-neutral-800"}`}>
                         {v.nama}
                       </p>
-                      <p className={`text-[11px] sm:text-xs font-medium mt-1 sm:mt-1.5 ${isSelected ? "text-primary/80" : "text-neutral-500"}`}>
+                      <p className={`text-xs sm:text-xs font-medium mt-1 sm:mt-1.5 ${isSelected ? "text-primary/80" : "text-neutral-500"}`}>
                         {addedPrice > 0 ? `+ ${formatRupiah(addedPrice)}` : "Standar"}
                       </p>
                     </button>
@@ -304,14 +304,14 @@ export default function VariantBottomSheet() {
         {/* ── Footer ── */}
         <div className="p-5 sm:p-6 pt-4 sm:pt-4 mt-2 sm:mt-2 border-t border-neutral-100 flex flex-row items-center justify-between gap-4 bg-white rounded-b-[24px]">
           <div>
-            <p className="text-[11px] sm:text-xs font-medium text-neutral-500 mb-0.5">Total</p>
+            <p className="text-xs sm:text-xs font-medium text-neutral-500 mb-0.5">Total</p>
             <p className="text-lg sm:text-xl font-bold font-display text-primary tracking-tight">
               {formatRupiah(finalPrice)}
             </p>
             
             {/* Peringatan Budget */}
             {referenceBudget != null && finalPrice > referenceBudget && (
-              <p className="text-[10px] sm:text-[11px] text-danger font-medium mt-1 absolute bottom-2 left-5 sm:left-6">
+              <p className="text-xs sm:text-xs text-danger font-medium mt-1 absolute bottom-2 left-5 sm:left-6">
                 Melebihi budget (+{formatRupiah(finalPrice - referenceBudget)})
               </p>
             )}

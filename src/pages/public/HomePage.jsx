@@ -60,7 +60,7 @@ export default function HomePage() {
             >
               <ShoppingBag size={20} />
               {itemCount > 0 && (
-                <span className="absolute -right-1 -top-1 flex h-5 min-w-[20px] items-center justify-center rounded-full bg-primary px-1.5 font-body text-[11px] font-bold text-white shadow-sm ring-2 ring-white">
+                <span className="absolute -right-1 -top-1 flex h-5 min-w-[20px] items-center justify-center rounded-full bg-primary px-1.5 font-body text-xs font-bold text-white shadow-sm ring-2 ring-white">
                   {itemCount}
                 </span>
               )}

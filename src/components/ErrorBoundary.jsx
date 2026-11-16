@@ -42,7 +42,7 @@ export default class ErrorBoundary extends Component {
             {this.state.error && (
               <details className="mb-4 text-left">
                 <summary className="text-xs text-neutral-400 cursor-pointer mb-1">Detail error (untuk developer)</summary>
-                <pre className="text-[11px] bg-neutral-100 rounded-lg p-3 text-neutral-600 overflow-auto max-h-32">
+                <pre className="text-xs bg-neutral-100 rounded-lg p-3 text-neutral-600 overflow-auto max-h-32">
                   {this.state.error.message}
                 </pre>
               </details>

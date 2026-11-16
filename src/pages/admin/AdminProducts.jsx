@@ -248,7 +248,7 @@ export default function AdminProducts() {
     return product.image_url ? (
       <img src={product.image_url} alt="" className="w-12 h-12 object-cover rounded-lg border border-neutral-200 shrink-0" />
     ) : (
-      <div className="w-12 h-12 bg-neutral-100 rounded-lg border border-neutral-200 flex items-center justify-center text-[9px] text-neutral-400 font-medium shrink-0">Kosong</div>
+      <div className="w-12 h-12 bg-neutral-100 rounded-lg border border-neutral-200 flex items-center justify-center text-xs text-neutral-400 font-medium shrink-0">Kosong</div>
     );
   }
 
@@ -359,7 +359,7 @@ export default function AdminProducts() {
             {opt.icon && filter !== opt.key && <opt.icon size={12} />}
             {opt.label}
             {opt.count != null && opt.count > 0 && (
-              <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${
+              <span className={`text-xs font-bold px-1.5 py-0.5 rounded-full ${
                 filter === opt.key ? "bg-white/20 text-white" : opt.badgeClass
               }`}>
                 {opt.count}
@@ -414,7 +414,7 @@ export default function AdminProducts() {
           <div className="hidden md:block overflow-x-auto">
             <table className="w-full text-sm border-collapse">
               <thead>
-                <tr className="bg-neutral-50 border-b border-neutral-200 text-[11px] uppercase tracking-widest text-neutral-500 font-bold">
+                <tr className="bg-neutral-50 border-b border-neutral-200 text-xs uppercase tracking-widest text-neutral-500 font-bold">
                   <th className="text-left px-5 py-3">Produk</th>
                   <th className="text-left px-5 py-3">Kategori</th>
                   <th className="text-right px-5 py-3">Harga</th>
@@ -519,7 +519,7 @@ export default function AdminProducts() {
                   }`}
                 />
                 {Number(form.stock) <= 10 && form.stock !== "" && (
-                  <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] font-bold text-amber-600">
+                  <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs font-bold text-amber-600">
                     {Number(form.stock) === 0 ? "HABIS" : "RENDAH"}
                   </span>
                 )}

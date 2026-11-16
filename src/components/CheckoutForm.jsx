@@ -415,7 +415,7 @@ export default function CheckoutForm({ onBack, onSuccess, onPayLater }) {
                 <QrCode size={20} />
                 {loading ? "Memproses..." : "Bayar Sekarang"}
               </button>
-              <p className="text-[11px] text-center text-neutral-500 mt-3">
+              <p className="text-xs text-center text-neutral-500 mt-3">
                 Pembayaran aman • Data terenkripsi
               </p>
             </div>

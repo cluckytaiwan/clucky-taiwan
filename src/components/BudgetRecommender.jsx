@@ -349,7 +349,7 @@ export default function BudgetRecommender({ products, onCartOpen }) {
                       {/* Card header dengan badge ranking */}
                       <div className="px-4 pt-4 pb-3 border-b border-neutral-50">
                         <div className="flex items-center justify-between mb-1">
-                          <span className={`inline-flex items-center gap-1.5 text-[11px] font-bold px-2.5 py-1 rounded-full border ${rank.color} ${combo.kind === "best" ? "badge-best" : ""}`}>
+                          <span className={`inline-flex items-center gap-1.5 text-xs font-bold px-2.5 py-1 rounded-full border ${rank.color} ${combo.kind === "best" ? "badge-best" : ""}`}>
                             <RankIcon size={10} />
                             {rank.label}
                           </span>
@@ -360,7 +360,7 @@ export default function BudgetRecommender({ products, onCartOpen }) {
 
                         {/* Badge ada varian */}
                         {needsVariant && (
-                          <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-amber-700 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-full mt-1">
+                          <span className="inline-flex items-center gap-1 text-xs font-semibold text-amber-700 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-full mt-1">
                             <Tag size={9} />
                             Pilih Varian di Detail
                           </span>
@@ -394,7 +394,7 @@ export default function BudgetRecommender({ products, onCartOpen }) {
                                   {formatRupiah((item.min_price ?? item.price) * qty)}
                                 </p>
                                 {item.has_variants && (
-                                  <span className="text-[10px] text-amber-500 font-semibold">+varian</span>
+                                  <span className="text-xs text-amber-500 font-semibold">+varian</span>
                                 )}
                               </div>
                             </div>
@@ -406,7 +406,7 @@ export default function BudgetRecommender({ products, onCartOpen }) {
                       <div className="px-4 pb-4 mt-1">
                         {/* Progress bar efisiensi budget */}
                         <div className="mb-3">
-                          <div className="flex justify-between text-[11px] text-neutral-400 mb-1.5">
+                          <div className="flex justify-between text-xs text-neutral-400 mb-1.5">
                             <span>Efisiensi budget</span>
                             <span className="font-bold text-neutral-600">{efficiency}%</span>
                           </div>
@@ -421,21 +421,21 @@ export default function BudgetRecommender({ products, onCartOpen }) {
                         {/* Total & sisa */}
                         <div className="flex justify-between items-end mb-3">
                           <div>
-                            <p className="text-[11px] text-neutral-400 mb-0.5">
+                            <p className="text-xs text-neutral-400 mb-0.5">
                               {combo.isEstimate ? "Mulai dari" : "Total"}
                             </p>
                             <p className="font-display font-extrabold text-xl text-neutral-900">
                               {formatRupiah(combo.totalPrice)}
                             </p>
                             {combo.isEstimate && (
-                              <p className="text-[11px] text-amber-600 font-medium mt-0.5">
+                              <p className="text-xs text-amber-600 font-medium mt-0.5">
                                 Bisa berubah sesuai varian pilihanmu
                               </p>
                             )}
                           </div>
                           {combo.leftover > 0 && !combo.isEstimate && (
                             <div className="text-right">
-                              <p className="text-[11px] text-neutral-400 mb-0.5">Sisa budget</p>
+                              <p className="text-xs text-neutral-400 mb-0.5">Sisa budget</p>
                               <p className="text-sm font-bold text-success">{formatRupiah(combo.leftover)}</p>
                             </div>
                           )}
