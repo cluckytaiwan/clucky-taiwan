@@ -1,18 +1,32 @@
 // src/components/admin/OrderDetailModal.jsx
-import { useDialogFocus } from "../../hooks/useDialogFocus";
-import { X, MessageCircle, MapPin, StickyNote } from "lucide-react";
+import { X } from "lucide-react";
 import { formatRupiah } from "../../utils/formatCurrency";
 import FulfillmentDropdown from "./FulfillmentDropdown";
-import { PAYMENT_STATUS, formatOrderCode, formatOrderDate, customerWaLink } from "../../constants/adminOrder";
+
+const PAYMENT_STATUS = {
+  menunggu_pembayaran: { label: "Menunggu",    badge: "bg-amber-100 text-amber-700 border-amber-200" },
+  lunas:               { label: "Lunas",        badge: "bg-green-100 text-green-700 border-green-200"  },
+  kadaluarsa:          { label: "Kedaluwarsa",  badge: "bg-neutral-100 text-neutral-500 border-neutral-200" },
+  dibatalkan:          { label: "Dibatalkan",   badge: "bg-red-100 text-red-600 border-red-200"       },
+  ditolak:             { label: "Ditolak",      badge: "bg-red-100 text-red-600 border-red-200"       },
+  dikembalikan:        { label: "Dikembalikan", badge: "bg-blue-100 text-blue-600 border-blue-200"    },
+};
+
+function formatDate(iso) {
+  return new Date(iso)
+    .toLocaleString("id-ID", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })
+    .replace(".", ":");
+}
+
+function formatCode(id) {
+  return `#${String(id).padStart(4, "0")}`;
+}
 
 export default function OrderDetailModal({ order, onClose, onUpdate, loadingId }) {
-  const dialogRef = useDialogFocus(true, onClose);
-
   if (!order) return null;
-  const kode    = formatOrderCode(order);
+  const kode    = order.kode_pesanan ? `#${order.kode_pesanan}` : formatCode(order.id);
   const ps      = PAYMENT_STATUS[order.status_pembayaran] || {};
   const isLunas = order.status_pembayaran === "lunas";
-  const wa      = customerWaLink(order);
 
   return (
     <div
@@ -21,11 +35,6 @@ export default function OrderDetailModal({ order, onClose, onUpdate, loadingId }
       onClick={onClose}
     >
       <div
-        ref={dialogRef}
-        tabIndex={-1}
-        role="dialog"
-        aria-modal="true"
-        aria-label={`Detail pesanan ${kode}`}
         className="bg-white rounded-2xl shadow-2xl w-full max-w-md flex flex-col"
         style={{ maxHeight: "90vh" }}
         onClick={(e) => e.stopPropagation()}
@@ -35,16 +44,15 @@ export default function OrderDetailModal({ order, onClose, onUpdate, loadingId }
           <div>
             <div className="flex items-center gap-2">
               <p className="font-bold text-lg text-neutral-900 font-mono">{kode}</p>
-              <span className={`text-xs font-semibold px-2 py-0.5 rounded-full border ${ps.badge}`}>
+              <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-full border ${ps.badge}`}>
                 {ps.label}
               </span>
             </div>
-            <p className="text-xs text-neutral-400 mt-0.5">{formatOrderDate(order.created_at)}</p>
+            <p className="text-xs text-neutral-400 mt-0.5">{formatDate(order.created_at)}</p>
           </div>
           <button
             onClick={onClose}
-            aria-label="Tutup detail pesanan"
-            className="w-10 h-10 flex items-center justify-center rounded-full bg-neutral-100 hover:bg-neutral-200 transition-colors text-neutral-500 shrink-0"
+            className="w-8 h-8 flex items-center justify-center rounded-full bg-neutral-100 hover:bg-neutral-200 transition-colors text-neutral-500 shrink-0"
           >
             <X size={16} />
           </button>
@@ -54,25 +62,12 @@ export default function OrderDetailModal({ order, onClose, onUpdate, loadingId }
         <div className="overflow-y-auto px-6 py-5 space-y-5">
           {/* Pelanggan */}
           <div>
-            <p className="text-xs font-bold text-neutral-400 uppercase tracking-widest mb-2">Pelanggan</p>
+            <p className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest mb-2">Pelanggan</p>
             <p className="font-semibold text-neutral-900">{order.nama_pelanggan}</p>
-            <div className="flex items-center gap-3">
-              <p className="text-sm text-neutral-500">{order.no_hp_pelanggan}</p>
-              {wa && (
-                <a
-                  href={wa}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1 rounded-lg border border-green-200 bg-green-50 px-2.5 py-1 text-xs font-semibold text-success hover:bg-green-100"
-                >
-                  <MessageCircle size={13} />
-                  {order.status_pesanan === "dikirim" ? "Kabari siap diambil" : "Chat WhatsApp"}
-                </a>
-              )}
-            </div>
+            <p className="text-sm text-neutral-500">{order.no_hp_pelanggan}</p>
             {order.alamat_pelanggan && order.alamat_pelanggan !== "-" && (
               <p className="text-sm text-neutral-500 mt-0.5 flex gap-1.5">
-                <MapPin size={14} className="mt-0.5 shrink-0" aria-hidden="true" /><span>{order.alamat_pelanggan}</span>
+                <span>📍</span><span>{order.alamat_pelanggan}</span>
               </p>
             )}
           </div>
@@ -80,9 +75,9 @@ export default function OrderDetailModal({ order, onClose, onUpdate, loadingId }
           {/* Catatan */}
           {order.catatan && (
             <div className="flex gap-2.5 p-3 bg-amber-50 border border-amber-200 rounded-xl">
-              <StickyNote size={16} className="text-amber-600 shrink-0 mt-0.5" aria-hidden="true" />
+              <span className="text-amber-500 shrink-0 mt-0.5">📝</span>
               <div>
-                <p className="text-xs font-bold text-amber-700 uppercase tracking-widest mb-0.5">Catatan</p>
+                <p className="text-[10px] font-bold text-amber-700 uppercase tracking-widest mb-0.5">Catatan</p>
                 <p className="text-sm text-amber-900 leading-relaxed">{order.catatan}</p>
               </div>
             </div>
@@ -91,7 +86,7 @@ export default function OrderDetailModal({ order, onClose, onUpdate, loadingId }
           {/* Items */}
           <div className="rounded-xl border border-neutral-100 overflow-hidden">
             <div className="bg-neutral-50 px-4 py-2.5">
-              <p className="text-xs font-bold text-neutral-400 uppercase tracking-widest">Item Pesanan</p>
+              <p className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest">Item Pesanan</p>
             </div>
             <div className="divide-y divide-neutral-100">
               {order.detail_pesanan?.map((dp) => (
@@ -122,7 +117,7 @@ export default function OrderDetailModal({ order, onClose, onUpdate, loadingId }
           {/* Fulfillment dropdown di modal */}
           {isLunas && (
             <div>
-              <p className="text-xs font-bold text-neutral-400 uppercase tracking-widest mb-2">Status Pengerjaan</p>
+              <p className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest mb-2">Status Pengiriman</p>
               <FulfillmentDropdown order={order} onUpdate={onUpdate} loadingId={loadingId} />
             </div>
           )}
