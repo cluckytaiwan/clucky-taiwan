@@ -1,11 +1,18 @@
 // src/pages/admin/AdminLogin.jsx
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useAdminAuth } from "../../context/AdminAuthContext";
 import { useNavigate } from "react-router-dom";
 import heroImg from "../../assets/hero.jpg";
 
 export default function AdminLogin() {
   const { login } = useAdminAuth();
+  // Tema admin lama (abu-abu & hijau sebelum audit UI). Dipasang di <body> agar toast
+  // dan popup yang dirender di luar layout ikut. Halaman publik tetap memakai palet baru.
+  useEffect(() => {
+    document.body.classList.add("admin-legacy");
+    return () => document.body.classList.remove("admin-legacy");
+  }, []);
+
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -26,7 +33,7 @@ export default function AdminLogin() {
   }
 
   return (
-    <div className="min-h-dvh flex items-center justify-center px-4 relative overflow-hidden">
+    <div className="min-h-screen flex items-center justify-center px-4 relative overflow-hidden">
       {/* Background Image */}
       <div 
         className="absolute inset-0 bg-cover bg-center"
@@ -41,13 +48,9 @@ export default function AdminLogin() {
       >
         <h1 className="text-xl font-bold font-display text-neutral-900 text-center">Admin Clucky Taiwan</h1>
         <div>
-          <label htmlFor="login-email" className="text-sm font-medium text-neutral-900">Email</label>
+          <label className="text-sm font-medium text-neutral-900">Email</label>
           <input
-            id="login-email"
             type="email"
-            autoComplete="username"
-            aria-invalid={error ? true : undefined}
-            aria-describedby={error ? "login-error" : undefined}
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             className="w-full mt-1 border border-neutral-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary"
@@ -55,20 +58,16 @@ export default function AdminLogin() {
           />
         </div>
         <div>
-          <label htmlFor="login-password" className="text-sm font-medium text-neutral-900">Password</label>
+          <label className="text-sm font-medium text-neutral-900">Password</label>
           <input
-            id="login-password"
             type="password"
-            autoComplete="current-password"
-            aria-invalid={error ? true : undefined}
-            aria-describedby={error ? "login-error" : undefined}
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             className="w-full mt-1 border border-neutral-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary"
             required
           />
         </div>
-        {error && <p id="login-error" role="alert" className="text-sm text-danger">{error}</p>}
+        {error && <p className="text-sm text-danger">{error}</p>}
         <button
           type="submit"
           disabled={loading}

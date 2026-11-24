@@ -1,6 +1,5 @@
 // src/pages/admin/AdminCategories.jsx
 import { useEffect, useState } from "react";
-import { useDialogFocus } from "../../hooks/useDialogFocus";
 import { supabase } from "../../lib/supabaseClient";
 import { Pencil, Trash2, Plus, X } from "lucide-react";
 
@@ -13,8 +12,6 @@ export default function AdminCategories() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [confirmDelete, setConfirmDelete] = useState(null); // { id, name }
-  const formDialogRef = useDialogFocus(showForm, () => setShowForm(false));
-  const deleteDialogRef = useDialogFocus(Boolean(confirmDelete), () => setConfirmDelete(null));
 
   useEffect(() => {
     fetchCategories();
@@ -133,10 +130,10 @@ export default function AdminCategories() {
                       </span>
                     </td>
                     <td className="p-4 flex gap-3">
-                      <button onClick={() => openEdit(c)} className="p-2 -m-1 text-blue-600 hover:text-blue-700 transition-colors" title="Edit" aria-label={`Edit kategori ${c.nama_kategori}`}>
+                      <button onClick={() => openEdit(c)} className="text-blue-500 hover:text-blue-600 transition-colors" title="Edit">
                         <Pencil size={18} />
                       </button>
-                      <button onClick={() => setConfirmDelete({ id: c.id, name: c.nama_kategori, productCount: c.produk?.length ?? 0 })} className="p-2 -m-1 text-danger hover:text-red-700 transition-colors" title="Hapus" aria-label={`Hapus kategori ${c.nama_kategori}`}>
+                      <button onClick={() => setConfirmDelete({ id: c.id, name: c.nama_kategori })} className="text-danger hover:text-red-700 transition-colors" title="Hapus">
                         <Trash2 size={18} />
                       </button>
                     </td>
@@ -152,11 +149,6 @@ export default function AdminCategories() {
       {showForm && (
         <div className="fixed inset-0 bg-neutral-900/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
           <form
-            ref={formDialogRef}
-            role="dialog"
-            aria-modal="true"
-            aria-label={editingId ? "Edit Kategori" : "Tambah Kategori"}
-            tabIndex={-1}
             onSubmit={handleSave}
             className="bg-surface rounded-2xl p-6 w-full max-w-sm shadow-xl"
           >
@@ -200,18 +192,16 @@ export default function AdminCategories() {
       {/* Custom Confirm Dialog Hapus */}
       {confirmDelete && (
         <div className="fixed inset-0 bg-neutral-900/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div ref={deleteDialogRef} role="alertdialog" aria-modal="true" aria-labelledby="del-category-title" tabIndex={-1} className="bg-white rounded-2xl p-6 w-full max-w-sm shadow-xl">
+          <div className="bg-white rounded-2xl p-6 w-full max-w-sm shadow-xl">
             <div className="w-12 h-12 rounded-full bg-red-100 flex items-center justify-center mx-auto mb-4">
-              <Trash2 size={22} className="text-danger" aria-hidden="true" />
+              <Trash2 size={22} className="text-danger" />
             </div>
-            <h3 id="del-category-title" className="font-bold text-lg text-neutral-900 text-center mb-2">Hapus Kategori?</h3>
+            <h3 className="font-bold text-lg text-neutral-900 text-center mb-2">Hapus Kategori?</h3>
             <p className="text-sm text-neutral-500 text-center mb-1">
               Yakin hapus <span className="font-semibold text-neutral-800">{confirmDelete.name}</span>?
             </p>
             <p className="text-xs text-amber-600 text-center mb-5">
-              {confirmDelete.productCount > 0
-                ? `${confirmDelete.productCount} produk di kategori ini akan menjadi tanpa kategori dan tidak muncul di filter kategori menu.`
-                : "Kategori ini tidak dipakai produk mana pun."}
+              Produk yang menggunakan kategori ini akan menjadi tanpa kategori.
             </p>
             <div className="flex gap-3">
               <button
