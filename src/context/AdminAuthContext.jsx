@@ -4,6 +4,11 @@ import { supabase } from "../lib/supabaseClient";
 
 const AdminAuthContext = createContext(null);
 
+/**
+ * Menyimpan status login admin untuk seluruh halaman admin.
+ * Dipasang sekali di App; dipakai ProtectedRoute dan halaman login.
+ * Hasil: session (sudah login?) dan isAdmin (terdaftar sebagai admin?).
+ */
 export function AdminAuthProvider({ children }) {
   const [session, setSession] = useState(null);
   const [isAdmin, setIsAdmin] = useState(false);
@@ -32,14 +37,14 @@ export function AdminAuthProvider({ children }) {
     }
 
     try {
-      // Tabel "admin" (singular, §7) — whitelist, bukan sekadar cek status login
+      // Login saja belum cukup: akun harus terdaftar di tabel admin (daftar akun yang diizinkan)
       const { data, error } = await supabase
         .from("admin")
         .select("user_id")
         .eq("user_id", session.user.id)
         .single();
 
-      // PGRST116 = no rows found (normal case, not an error)
+      // PGRST116 = data tidak ditemukan, artinya akun ini memang bukan admin
       if (error && error.code !== "PGRST116") {
         console.error("Admin check failed:", error);
       }
@@ -51,6 +56,7 @@ export function AdminAuthProvider({ children }) {
     }
   }
 
+  // Password dicek oleh Supabase Auth; aplikasi ini tidak menyimpan password sendiri
   async function login(email, password) {
     const { error } = await supabase.auth.signInWithPassword({ email, password });
     return error;

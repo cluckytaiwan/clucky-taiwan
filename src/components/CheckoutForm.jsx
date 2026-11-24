@@ -14,6 +14,8 @@ const LAST_ORDER_KEY = "clucky_last_order";
 const initialForm = { customer_name: "", customer_phone: "", customer_notes: "" };
 
 /* ─── Helper localStorage ───────────────────────────────────── */
+// Menyimpan pesanan yang belum dibayar di perangkat pelanggan (tanpa akun),
+// agar tombol "Bayar Sekarang" bisa dibuka lagi setelah popup Midtrans ditutup.
 export function savePendingPayment({ snapToken, kode, hp, orderId, total }) {
   localStorage.setItem(PENDING_KEY, JSON.stringify({ snapToken, kode, hp, orderId, total, savedAt: Date.now() }));
 }
@@ -22,7 +24,7 @@ export function getPendingPayment() {
     const raw = localStorage.getItem(PENDING_KEY);
     if (!raw) return null;
     const data = JSON.parse(raw);
-    // Anggap expired setelah 23 jam (snap token Midtrans 24 jam)
+    // Data lokal dibuang setelah 23 jam (link bayar Midtrans sendiri berlaku 30 menit)
     if (Date.now() - data.savedAt > 23 * 60 * 60 * 1000) {
       localStorage.removeItem(PENDING_KEY);
       return null;
@@ -152,6 +154,8 @@ export default function CheckoutForm({ onBack, onSuccess, onPayLater }) {
       return false;
     });
 
+    // Callback Snap hanya mengatur tampilan; status "lunas" di database hanya
+    // diubah oleh webhook Midtrans yang sudah diverifikasi signature-nya.
     window.snap.pay(snapToken, {
       onSuccess: () => finish(true),
       onPending: () => finish(false),
@@ -168,6 +172,11 @@ export default function CheckoutForm({ onBack, onSuccess, onPayLater }) {
     });
   }
 
+  /**
+   * Mengirim pesanan ke server lalu membuka popup pembayaran Midtrans.
+   * Dipanggil saat pelanggan menekan tombol bayar di halaman checkout.
+   * Hasil: pesanan dibuat di server, keranjang dikosongkan, popup QRIS terbuka.
+   */
   async function handleSubmit(e) {
     e.preventDefault();
     setServerError("");
@@ -180,7 +189,8 @@ export default function CheckoutForm({ onBack, onSuccess, onPayLater }) {
 
     setLoading(true);
     try {
-      // 1. Pre-flight check stok terbaru
+      // 1. Cek stok awal agar pelanggan cepat tahu bila stok habis.
+      //    Ini hanya untuk kenyamanan; cek stok yang menentukan tetap di server.
       const productIds = items.map((i) => i.product_id || i.id); // handle backward compatibility id
       const { data: stockData, error: stockError } = await supabase
         .from("produk")
@@ -189,13 +199,21 @@ export default function CheckoutForm({ onBack, onSuccess, onPayLater }) {
 
       if (stockError) throw stockError;
 
-      const stockErrors = [];
+      // Varian berbagi stok produk: jumlahkan qty semua baris dengan produk yang sama
+      const qtyPerProduct = new Map();
       for (const item of items) {
         const itemId = item.product_id || item.id;
+        const entry = qtyPerProduct.get(itemId);
+        if (entry) entry.qty += item.qty;
+        else qtyPerProduct.set(itemId, { qty: item.qty, name: item.name });
+      }
+
+      const stockErrors = [];
+      for (const [itemId, { qty, name }] of qtyPerProduct) {
         const current = stockData?.find((p) => p.id === itemId);
-        if (!current?.aktif) stockErrors.push(`"${item.name}" tidak lagi tersedia`);
-        else if (current.stok < item.qty) {
-          stockErrors.push(`Stok "${item.name}" sisa ${current.stok}`);
+        if (!current?.aktif) stockErrors.push(`"${name}" tidak lagi tersedia`);
+        else if (current.stok < qty) {
+          stockErrors.push(`Stok "${name}" sisa ${current.stok}`);
         }
       }
 
@@ -205,7 +223,8 @@ export default function CheckoutForm({ onBack, onSuccess, onPayLater }) {
         return;
       }
 
-      // 2. Buat pesanan (Edge Function)
+      // 2. Buat pesanan di server. Yang dikirim hanya ID produk, varian, dan jumlah;
+      //    harga dihitung ulang di server.
       const res = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/create-order`,
         {
@@ -236,8 +255,8 @@ export default function CheckoutForm({ onBack, onSuccess, onPayLater }) {
         return;
       }
 
-      // Pesanan sudah tersimpan di DB: catat ke riwayat perangkat SEKARANG (bukan
-      // menunggu bayar), supaya pesanan "Bayar Nanti" tetap muncul di Pesanan Saya.
+      // 3. Pesanan sudah tersimpan: catat ke riwayat perangkat SEKARANG (bukan
+      //    menunggu bayar), supaya pesanan "Bayar Nanti" tetap muncul di Pesanan Saya.
       saveOrderToHistory({
         kode: data.kode_pesanan,
         hp: form.customer_phone.trim(),
@@ -247,6 +266,7 @@ export default function CheckoutForm({ onBack, onSuccess, onPayLater }) {
       setOrderInProgress(true);
       clearCart();
 
+      // 4. Buka popup pembayaran Midtrans dengan token dari server
       openSnap({
         snapToken: data.snap_token,
         kode: data.kode_pesanan,
@@ -377,9 +397,12 @@ export default function CheckoutForm({ onBack, onSuccess, onPayLater }) {
 
               <div className="space-y-4 max-h-[40vh] overflow-y-auto pr-2 mb-6">
                 {items.map((item) => (
-                  <div key={item.product_id} className="flex justify-between items-start">
+                  <div key={item.cart_key ?? item.product_id} className="flex justify-between items-start">
                     <div>
                       <p className="text-sm font-semibold text-neutral-800">{item.name}</p>
+                      {item.variant_label && (
+                        <p className="text-xs text-neutral-500">{item.variant_label}</p>
+                      )}
                       <p className="text-xs text-neutral-500 mt-0.5">
                         {item.qty} x {formatRupiah(item.price)}
                       </p>

@@ -46,6 +46,7 @@ export const useOrdersStore = create((set, get) => ({
     const from = pg * PAGE_SIZE;
     const to   = from + PAGE_SIZE - 1;
 
+    // Browser admin bisa membaca tabel pesanan karena RLS mengizinkan akun di tabel admin
     const { data, count } = await supabase
       .from("pesanan")
       .select("*, detail_pesanan(*, produk(nama_produk))", { count: "exact" })
@@ -60,6 +61,12 @@ export const useOrdersStore = create((set, get) => ({
   },
 
   /* ─── Action: update fulfillment (optimistic + DB) ──────── */
+  /**
+   * Mengubah status pesanan (diproses → dikirim → selesai) oleh admin.
+   * Dipanggil dari dropdown status di halaman penjualan.
+   * Hasil: tampilan langsung berubah, lalu disimpan ke database; dibatalkan bila gagal.
+   * Hanya status_pesanan yang diubah; status pembayaran tidak disentuh di sini.
+   */
   updateFulfillment: async (orderId, newStatus) => {
     // Tandai agar tidak memicu notifikasi pesanan masuk saat event realtime UPDATE tiba
     markOrderHandled(orderId);
