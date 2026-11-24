@@ -90,10 +90,21 @@ Deno.serve(async (req) => {
       return errorResponse("VALIDATION_ERROR", "Terlalu banyak item dalam satu pesanan", 400);
     }
 
-    const productIds = payload.items.map((i) => i.product_id);
-    if (new Set(productIds).size !== productIds.length) {
-      return errorResponse("VALIDATION_ERROR", "Produk duplikat dalam keranjang", 400);
+    // Produk yang sama boleh muncul lebih dari sekali asalkan kombinasi variannya
+    // berbeda (mis. Ayam Large dan Ayam Small = dua baris keranjang).
+    const lineKeys = payload.items.map(
+      (i) => `${i.product_id}::${[...(i.variant_ids ?? [])].sort().join("_")}`,
+    );
+    if (new Set(lineKeys).size !== lineKeys.length) {
+      return errorResponse("VALIDATION_ERROR", "Item duplikat dalam keranjang", 400);
     }
+    for (const item of payload.items) {
+      const ids = item.variant_ids ?? [];
+      if (new Set(ids).size !== ids.length) {
+        return errorResponse("VALIDATION_ERROR", "Varian duplikat dalam satu item", 400);
+      }
+    }
+    const productIds = [...new Set(payload.items.map((i) => i.product_id))];
     for (const item of payload.items) {
       if (!Number.isInteger(item.qty) || item.qty <= 0 || item.qty > 50) {
         return errorResponse("VALIDATION_ERROR", "Jumlah item tidak valid", 400);
@@ -129,7 +140,8 @@ Deno.serve(async (req) => {
     }
 
     // ── Fetch & validasi varian (satu query untuk semua items) ──────────────
-    const allVariantIds = payload.items.flatMap((i) => i.variant_ids ?? []);
+    // Unik: varian yang sama bisa dipakai beberapa baris (mis. "Large · Pedas" & "Large · Original")
+    const allVariantIds = [...new Set(payload.items.flatMap((i) => i.variant_ids ?? []))];
     const variantMap = new Map<string, VariantRow>();
 
     if (allVariantIds.length > 0) {
@@ -224,12 +236,21 @@ Deno.serve(async (req) => {
     }
 
     // ── Kurangi stok (atomic, dengan rollback jika gagal) ───────────────────
+    // Stok dihitung per produk (varian berbagi stok produk), jadi jumlahkan
+    // dulu semua baris dengan produk yang sama.
+    const qtyPerProduct = new Map<string, { qty: number; name: string }>();
+    for (const item of orderItems) {
+      const entry = qtyPerProduct.get(item.product_id);
+      if (entry) entry.qty += item.qty;
+      else qtyPerProduct.set(item.product_id, { qty: item.qty, name: item.product_name });
+    }
+
     const decrementedItems: { product_id: string; qty: number }[] = [];
 
-    for (const item of orderItems) {
+    for (const [productId, { qty, name: productName }] of qtyPerProduct) {
       const { error: rpcError } = await supabase.rpc("kurangi_stok", {
-        p_produk_id: item.product_id,
-        p_jumlah: item.qty,
+        p_produk_id: productId,
+        p_jumlah: qty,
       });
 
       if (rpcError) {
@@ -237,13 +258,13 @@ Deno.serve(async (req) => {
         if (rpcError.message?.includes("STOK_TIDAK_CUKUP")) {
           return errorResponse(
             "INSUFFICIENT_STOCK",
-            `Stok produk ${item.product_name} tidak mencukupi`,
+            `Stok produk ${productName} tidak mencukupi`,
             409,
           );
         }
         throw rpcError;
       }
-      decrementedItems.push({ product_id: item.product_id, qty: item.qty });
+      decrementedItems.push({ product_id: productId, qty });
     }
 
     // ── Buat pesanan ────────────────────────────────────────────────────────

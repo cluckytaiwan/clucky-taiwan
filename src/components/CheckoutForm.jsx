@@ -189,13 +189,21 @@ export default function CheckoutForm({ onBack, onSuccess, onPayLater }) {
 
       if (stockError) throw stockError;
 
-      const stockErrors = [];
+      // Varian berbagi stok produk: jumlahkan qty semua baris dengan produk yang sama
+      const qtyPerProduct = new Map();
       for (const item of items) {
         const itemId = item.product_id || item.id;
+        const entry = qtyPerProduct.get(itemId);
+        if (entry) entry.qty += item.qty;
+        else qtyPerProduct.set(itemId, { qty: item.qty, name: item.name });
+      }
+
+      const stockErrors = [];
+      for (const [itemId, { qty, name }] of qtyPerProduct) {
         const current = stockData?.find((p) => p.id === itemId);
-        if (!current?.aktif) stockErrors.push(`"${item.name}" tidak lagi tersedia`);
-        else if (current.stok < item.qty) {
-          stockErrors.push(`Stok "${item.name}" sisa ${current.stok}`);
+        if (!current?.aktif) stockErrors.push(`"${name}" tidak lagi tersedia`);
+        else if (current.stok < qty) {
+          stockErrors.push(`Stok "${name}" sisa ${current.stok}`);
         }
       }
 
@@ -377,9 +385,12 @@ export default function CheckoutForm({ onBack, onSuccess, onPayLater }) {
 
               <div className="space-y-4 max-h-[40vh] overflow-y-auto pr-2 mb-6">
                 {items.map((item) => (
-                  <div key={item.product_id} className="flex justify-between items-start">
+                  <div key={item.cart_key ?? item.product_id} className="flex justify-between items-start">
                     <div>
                       <p className="text-sm font-semibold text-neutral-800">{item.name}</p>
+                      {item.variant_label && (
+                        <p className="text-xs text-neutral-500">{item.variant_label}</p>
+                      )}
                       <p className="text-xs text-neutral-500 mt-0.5">
                         {item.qty} x {formatRupiah(item.price)}
                       </p>

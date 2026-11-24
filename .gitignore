@@ -11,9 +11,9 @@ dist-ssr
 .env.*.local
 
 # editor
-.vscode/*
-!.vscode/extensions.json
+.vscode/
 .idea
+.obsidian/
 
 # os
 .DS_Store
@@ -24,6 +24,7 @@ npm-debug.log*
 
 # supabase local dev
 .supabase
+supabase/.temp/
 # OS files
 .DS_Store
 .DS_Store?
