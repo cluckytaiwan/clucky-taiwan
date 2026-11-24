@@ -12,12 +12,18 @@ function errorResponse(code: string, message: string, status: number) {
   return jsonResponse({ success: false, error: { code, message } }, status);
 }
 
+/**
+ * Menampilkan status satu pesanan untuk pelanggan tanpa akun.
+ * Dipanggil halaman "Cek Pesanan" (dan polling tiap beberapa detik setelah checkout).
+ * Hasil: status pembayaran, status pesanan, dan daftar item pesanan tersebut.
+ */
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
   }
 
   try {
+    // Tabel pesanan tertutup bagi browser, jadi dibaca lewat server dengan service role key
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
@@ -29,7 +35,8 @@ Deno.serve(async (req) => {
       return errorResponse("VALIDATION_ERROR", "Kode Pesanan dan nomor HP wajib diisi", 400);
     }
 
-    // Wajib DUA identitas — mencegah enumeration
+    // Wajib kode pesanan DAN nomor HP yang cocok, agar orang lain tidak bisa
+    // melihat pesanan dengan menebak-nebak kode saja
     const { data: rawOrder, error } = await supabase
       .from("pesanan")
       .select("id, status_pembayaran, status_pesanan, total_harga, created_at, updated_at, nama_pelanggan, catatan, kode_pesanan, snap_token")
@@ -51,7 +58,7 @@ Deno.serve(async (req) => {
       updated_at: rawOrder.updated_at, // dipakai sebagai estimasi waktu bayar (paidAt)
       customer_name: rawOrder.nama_pelanggan,
       customer_notes: rawOrder.catatan,
-      // snap_token hanya dikembalikan jika pembayaran masih pending
+      // Token bayar hanya dikirim selagi belum dibayar, untuk tombol "Bayar Sekarang"
       snap_token: rawOrder.status_pembayaran === "menunggu_pembayaran" ? rawOrder.snap_token : null,
     };
 

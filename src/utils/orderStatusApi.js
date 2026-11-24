@@ -1,9 +1,12 @@
 // src/utils/orderStatusApi.js
 //
-// Satu-satunya jalur pelanggan (anon) untuk membaca status pesanan:
-// Edge Function check-order-status yang mewajibkan kode_pesanan + no HP.
-// Pelanggan TIDAK boleh membaca tabel pesanan langsung (RLS anon dicabut di 0011).
+// Pelanggan tidak bisa membaca tabel pesanan langsung (ditutup RLS), jadi status
+// dibaca lewat Edge Function check-order-status yang mewajibkan kode + no HP.
 
+/**
+ * Mengambil status satu pesanan dari server.
+ * Dipanggil oleh pollOrderStatus di bawah. Hasil: { success, order } dari server.
+ */
 export async function fetchOrderStatus(kodePesanan, noHp) {
   const res = await fetch(
     `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/check-order-status`,
@@ -20,10 +23,10 @@ export async function fetchOrderStatus(kodePesanan, noHp) {
 }
 
 /**
- * Polling status pesanan secara berkala. Mengembalikan fungsi stop().
- * - Interval di-skip saat tab tidak terlihat (hemat request).
- * - onResult(order) dipanggil setiap respons sukses; kembalikan `true`
- *   dari onResult untuk menghentikan polling.
+ * Menanyakan status pesanan ke server setiap 5 detik (polling), sampai dihentikan.
+ * Dipanggil setelah checkout dan di halaman status pesanan.
+ * Hasil: fungsi stop(); onResult(order) mengembalikan true untuk berhenti.
+ * Saat tab tidak terlihat, pengecekan dilewati agar tidak membuang request.
  */
 export function pollOrderStatus(kodePesanan, noHp, onResult, intervalMs = 5000) {
   let stopped = false;

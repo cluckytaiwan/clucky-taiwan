@@ -1,13 +1,9 @@
 // src/hooks/useOrderRealtime.js
 //
-// Memantau perubahan status pesanan pelanggan tanpa refresh halaman.
-//
-// Sebelumnya hook ini memakai Supabase Realtime (postgres_changes) pada tabel
-// pesanan, yang mengharuskan role anon punya akses SELECT ke SELURUH tabel
-// (bocor PII). Sekarang memakai polling ke Edge Function check-order-status
-// yang memvalidasi dua identitas (kode_pesanan + no HP).
-//
-// Polling berhenti otomatis saat pesanan mencapai kondisi akhir.
+// Memantau status pesanan pelanggan tanpa refresh halaman, dengan polling ke
+// Edge Function check-order-status (kode + no HP). Tidak memakai Supabase Realtime
+// karena Realtime mengharuskan tabel pesanan bisa dibaca publik.
+// Polling berhenti otomatis saat pesanan selesai atau gagal.
 
 import { useEffect, useRef } from "react";
 import { pollOrderStatus } from "../utils/orderStatusApi";

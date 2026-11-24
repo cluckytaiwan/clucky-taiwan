@@ -1,23 +1,12 @@
 -- 0012_atomic_payment_and_expiry.sql
 --
--- Perbaikan keandalan P1:
---
--- 1. proses_status_pembayaran(): update status pembayaran + pengembalian stok
---    dalam SATU transaksi dengan update bersyarat. Mencegah race condition saat
---    Midtrans mengirim notifikasi yang sama berulang/bersamaan (sebelumnya stok
---    bisa dikembalikan dua kali), dan mengizinkan transisi lunas -> dikembalikan
---    (refund) yang sebelumnya diabaikan.
---
--- 2. kedaluwarsakan_pesanan_lama(): menandai pesanan "menunggu_pembayaran" yang
---    melewati batas waktu sebagai "kadaluarsa" dan mengembalikan stoknya.
---    Dijalankan pg_cron tiap 5 menit. Tanpa ini, pesanan yang tidak pernah
---    dibayar menahan stok selamanya (Midtrans tidak selalu mengirim notifikasi
---    expire bila pembeli tidak memilih metode bayar).
---
---    Batas 45 menit > masa berlaku Snap (30 menit, diset di create-order),
---    sehingga pesanan tidak dibatalkan selagi pembeli masih bisa membayar.
+-- 1. proses_status_pembayaran(): dipakai webhook dan pembatalan otomatis untuk mengubah status pembayaran.
+-- 2. kedaluwarsakan_pesanan_lama(): membatalkan otomatis pesanan yang tidak dibayar.
 
--- ── 1. Update status pembayaran secara atomik ──────────────────────────────
+-- ── 1. Update status pembayaran ────────────────────────────────────────────
+-- Mengubah status pembayaran dan mengembalikan stok dalam satu transaksi.
+-- Dipanggil webhook Midtrans dan fungsi kedaluwarsa di bawah.
+-- Hasil: 'updated', 'ignored' (sudah final / notifikasi ganda), atau 'not_found'.
 create or replace function public.proses_status_pembayaran(
   p_pesanan_id uuid,
   p_status     status_pembayaran
@@ -33,7 +22,7 @@ begin
   select status_pembayaran into v_lama
   from pesanan
   where id = p_pesanan_id
-  for update;                       -- kunci baris: notifikasi paralel menunggu giliran
+  for update;                       -- kunci baris: notifikasi yang datang bersamaan antre satu per satu
 
   if v_lama is null then
     return 'not_found';
@@ -77,6 +66,9 @@ revoke all on function public.proses_status_pembayaran(uuid, status_pembayaran) 
 grant execute on function public.proses_status_pembayaran(uuid, status_pembayaran) to service_role;
 
 -- ── 2. Kedaluwarsakan pesanan yang tidak dibayar ───────────────────────────
+-- Menandai pesanan yang 45 menit tak dibayar sebagai "kadaluarsa" dan mengembalikan stoknya.
+-- Diperlukan karena Midtrans tidak selalu mengirim notifikasi kedaluwarsa.
+-- Hasil: jumlah pesanan yang dikedaluwarsakan.
 create or replace function public.kedaluwarsakan_pesanan_lama(p_batas interval default interval '45 minutes')
 returns integer
 language plpgsql
@@ -92,7 +84,7 @@ begin
     where status_pembayaran = 'menunggu_pembayaran'
       and created_at < now() - p_batas
     order by created_at
-    for update skip locked
+    for update skip locked          -- lewati pesanan yang sedang diproses webhook
   loop
     if public.proses_status_pembayaran(v_id, 'kadaluarsa') = 'updated' then
       v_jumlah := v_jumlah + 1;
@@ -105,7 +97,8 @@ $$;
 revoke all on function public.kedaluwarsakan_pesanan_lama(interval) from public, anon, authenticated;
 grant execute on function public.kedaluwarsakan_pesanan_lama(interval) to service_role;
 
--- ── 3. Jadwal pg_cron tiap 5 menit ─────────────────────────────────────────
+-- ── 3. Jadwal otomatis tiap 5 menit ────────────────────────────────────────
+-- pg_cron = ekstensi penjadwal tugas di PostgreSQL; menjalankan fungsi nomor 2 di atas.
 create extension if not exists pg_cron with schema pg_catalog;
 
 select cron.unschedule(jobid) from cron.job where jobname = 'kedaluwarsakan-pesanan-lama';

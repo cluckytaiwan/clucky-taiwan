@@ -28,16 +28,22 @@ interface VariantRow {
   harga_tambahan: number;
 }
 
-// Batas pesanan belum dibayar per nomor HP dalam jendela waktu — mencegah stok
-// "dikunci" oleh pesanan berulang yang tidak pernah dibayar.
+// Maks. 3 pesanan belum dibayar per nomor HP dalam 45 menit, agar stok tidak
+// tertahan oleh pesanan berulang yang tidak pernah dibayar.
 const MAX_PENDING_PER_PHONE = 3;
 const PENDING_WINDOW_MINUTES = 45;
-// Masa berlaku Snap. Cron kedaluwarsakan_pesanan_lama() membatalkan setelah 45 menit.
+// Link bayar Midtrans berlaku 30 menit; pesanan baru dibatalkan otomatis setelah
+// 45 menit, jadi pesanan tidak batal selagi pembeli masih bisa membayar.
 const SNAP_EXPIRY_MINUTES = 30;
 
 // Alfabet tanpa karakter yang mudah tertukar (0/O, 1/I/L)
 const CODE_ALPHABET = "23456789ABCDEFGHJKMNPQRSTUVWXYZ";
+/**
+ * Membuat kode pesanan pendek untuk pelanggan, mis. "CTX-7K2M9QXA".
+ * Dipanggil saat pesanan disimpan. Hasil: kode acak yang sulit ditebak.
+ */
 function generateOrderCode(length = 8): string {
+  // crypto (bukan Math.random) agar kode tidak bisa diprediksi orang lain
   const bytes = crypto.getRandomValues(new Uint8Array(length));
   let out = "";
   for (const b of bytes) out += CODE_ALPHABET[b % CODE_ALPHABET.length];
@@ -48,12 +54,20 @@ function errorResponse(code: string, message: string, status: number) {
   return jsonResponse({ success: false, error: { code, message } }, status);
 }
 
+/**
+ * Membuat pesanan baru dan meminta token pembayaran ke Midtrans.
+ * Dipanggil oleh halaman checkout saat pelanggan menekan tombol bayar.
+ * Hasil: pesanan tersimpan berstatus "menunggu_pembayaran", stok direservasi,
+ * dan snap_token dikirim ke browser untuk membuka popup pembayaran.
+ */
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
   }
 
   try {
+    // Service role key hanya ada di server ini; key ini melewati RLS (aturan akses
+    // per baris di database), jadi tidak boleh sampai ke browser.
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
@@ -61,7 +75,8 @@ Deno.serve(async (req) => {
 
     const payload: CheckoutPayload = await req.json();
 
-    // ── Validasi payload dasar ──────────────────────────────────────────────
+    // ── 1. Validasi isi permintaan ──────────────────────────────────────────
+    // Browser bisa dimanipulasi, jadi semua input dicek ulang di server.
     if (
       !payload.customer_name?.trim() ||
       !payload.customer_phone?.trim() ||
@@ -111,7 +126,8 @@ Deno.serve(async (req) => {
       }
     }
 
-    // ── Fetch & validasi produk ─────────────────────────────────────────────
+    // ── 2. Ambil produk dari database ───────────────────────────────────────
+    // Yang dikirim browser hanya ID dan jumlah; harga selalu diambil dari database.
     const { data: rawProducts, error: productError } = await supabase
       .from("produk")
       .select("id, nama_produk, harga, stok, aktif")
@@ -139,7 +155,7 @@ Deno.serve(async (req) => {
       );
     }
 
-    // ── Fetch & validasi varian (satu query untuk semua items) ──────────────
+    // ── 3. Ambil dan validasi varian ────────────────────────────────────────
     // Unik: varian yang sama bisa dipakai beberapa baris (mis. "Large · Pedas" & "Large · Original")
     const allVariantIds = [...new Set(payload.items.flatMap((i) => i.variant_ids ?? []))];
     const variantMap = new Map<string, VariantRow>();
@@ -166,7 +182,7 @@ Deno.serve(async (req) => {
         variantMap.set(v.id, { ...v, harga_tambahan: Number(v.harga_tambahan) });
       }
 
-      // Validasi: setiap variant_id harus milik produk yang benar
+      // Mencegah varian murah dari produk lain ditempel ke produk ini
       for (const item of payload.items) {
         for (const vId of item.variant_ids ?? []) {
           const variant = variantMap.get(vId);
@@ -181,7 +197,8 @@ Deno.serve(async (req) => {
       }
     }
 
-    // ── Hitung harga final per item (base price + variant extras) ───────────
+    // ── 4. Hitung harga dan total di server ─────────────────────────────────
+    // Harga final = harga produk + tambahan varian, keduanya dari database.
     const orderItems = payload.items.map((item) => {
       const product = products.find((p) => p.id === item.product_id)!;
       const selectedVariants = (item.variant_ids ?? []).map((id) => variantMap.get(id)!);
@@ -218,7 +235,7 @@ Deno.serve(async (req) => {
       return errorResponse("VALIDATION_ERROR", "Total pesanan tidak valid", 400);
     }
 
-    // ── Batasi pesanan belum dibayar per nomor HP ───────────────────────────
+    // ── 5. Batasi pesanan belum dibayar per nomor HP ────────────────────────
     const since = new Date(Date.now() - PENDING_WINDOW_MINUTES * 60 * 1000).toISOString();
     const { count: pendingCount, error: pendingError } = await supabase
       .from("pesanan")
@@ -235,9 +252,10 @@ Deno.serve(async (req) => {
       );
     }
 
-    // ── Kurangi stok (atomic, dengan rollback jika gagal) ───────────────────
-    // Stok dihitung per produk (varian berbagi stok produk), jadi jumlahkan
-    // dulu semua baris dengan produk yang sama.
+    // ── 6. Reservasi stok ───────────────────────────────────────────────────
+    // Stok dikurangi SEBELUM pesanan disimpan agar dua pembeli tidak bisa membeli
+    // stok terakhir yang sama. Bila pesanan tak dibayar, stok dikembalikan otomatis.
+    // Varian berbagi stok produk, jadi jumlah semua baris produk yang sama digabung.
     const qtyPerProduct = new Map<string, { qty: number; name: string }>();
     for (const item of orderItems) {
       const entry = qtyPerProduct.get(item.product_id);
@@ -254,6 +272,7 @@ Deno.serve(async (req) => {
       });
 
       if (rpcError) {
+        // Kembalikan stok produk yang sudah terlanjur dikurangi sebelumnya
         await rollbackStock(supabase, decrementedItems);
         if (rpcError.message?.includes("STOK_TIDAK_CUKUP")) {
           return errorResponse(
@@ -267,7 +286,8 @@ Deno.serve(async (req) => {
       decrementedItems.push({ product_id: productId, qty });
     }
 
-    // ── Buat pesanan ────────────────────────────────────────────────────────
+    // ── 7. Simpan pesanan ───────────────────────────────────────────────────
+    // Dua ID: midtrans_order_id untuk Midtrans, kode_pesanan pendek untuk pelanggan.
     const midtransOrderId = `CLUCKY-${Date.now()}-${crypto.randomUUID().slice(0, 8)}`;
 
     // Kode pendek untuk pelanggan; ulangi bila (sangat jarang) bentrok dengan kode lain
@@ -298,7 +318,8 @@ Deno.serve(async (req) => {
       throw orderError ?? new Error("Gagal membuat pesanan");
     }
 
-    // ── Insert detail pesanan (dengan snapshot varian) ──────────────────────
+    // ── 8. Simpan detail pesanan ────────────────────────────────────────────
+    // Nama dan harga disalin (snapshot) agar riwayat tidak berubah saat produk diedit.
     const { error: itemsError } = await supabase.from("detail_pesanan").insert(
       orderItems.map((i) => ({
         pesanan_id: order.id,
@@ -317,7 +338,8 @@ Deno.serve(async (req) => {
       throw itemsError;
     }
 
-    // ── Minta Snap Token dari Midtrans ──────────────────────────────────────
+    // ── 9. Minta token pembayaran (Snap) ke Midtrans ────────────────────────
+    // Server key Midtrans hanya dipakai di sini dan tidak pernah dikirim ke browser.
     const midtransServerKey = Deno.env.get("MIDTRANS_SERVER_KEY")!;
     const midtransBaseUrl = Deno.env.get("MIDTRANS_IS_PRODUCTION") === "true"
       ? Deno.env.get("MIDTRANS_SNAP_URL_PRODUCTION")!
@@ -349,6 +371,7 @@ Deno.serve(async (req) => {
       }),
     });
 
+    // Midtrans gagal: batalkan pesanan dan kembalikan stok, supaya tidak ada pesanan tanpa link bayar
     if (!snapResponse.ok) {
       await supabase.from("pesanan").delete().eq("id", order.id);
       await rollbackStock(supabase, decrementedItems);
@@ -375,6 +398,11 @@ Deno.serve(async (req) => {
   }
 });
 
+/**
+ * Mengembalikan stok yang sudah dikurangi bila pembuatan pesanan gagal di tengah jalan.
+ * Dipanggil oleh handler di atas saat langkah 6, 7, 8, atau 9 gagal.
+ * Hasil: stok kembali; kegagalan per produk hanya dicatat ke log.
+ */
 async function rollbackStock(supabase: any, items: { product_id: string; qty: number }[]) {
   for (const item of items) {
     try {

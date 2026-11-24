@@ -12,7 +12,11 @@ interface MidtransNotification {
   payment_type: string;
 }
 
-// Pemetaan status Midtrans -> enum status_pembayaran (Bahasa Indonesia, §7.1)
+/**
+ * Menerjemahkan status transaksi Midtrans ke status pembayaran di database.
+ * Dipanggil oleh handler webhook di bawah.
+ * Hasil: status baru, atau null bila belum perlu mengubah apa pun (mis. masih pending).
+ */
 function mapMidtransStatus(transactionStatus: string, fraudStatus?: string): string | null {
   switch (transactionStatus) {
     case "capture":
@@ -37,6 +41,11 @@ function mapMidtransStatus(transactionStatus: string, fraudStatus?: string): str
   }
 }
 
+/**
+ * Menerima notifikasi pembayaran dari Midtrans (webhook = panggilan otomatis antar-server).
+ * Dipanggil oleh server Midtrans setiap status transaksi berubah, bukan oleh pelanggan.
+ * Hasil: status pembayaran pesanan diperbarui; stok dikembalikan bila pembayaran gagal.
+ */
 Deno.serve(async (req) => {
   try {
     const supabase = createClient(
@@ -47,8 +56,10 @@ Deno.serve(async (req) => {
     const notification: MidtransNotification = await req.json();
 
     // ============================================
-    // 1. VERIFIKASI SIGNATURE — WAJIB
+    // 1. VERIFIKASI SIGNATURE
     // ============================================
+    // Signature = sidik SHA-512 yang hanya bisa dibuat pemilik server key. Jika tidak
+    // cocok, request ini bukan dari Midtrans dan diabaikan.
     const serverKey = Deno.env.get("MIDTRANS_SERVER_KEY")!;
     const expectedSignature = await sha512(
       notification.order_id + notification.status_code + notification.gross_amount + serverKey,
@@ -76,6 +87,7 @@ Deno.serve(async (req) => {
     // ============================================
     // 3. VALIDASI JUMLAH
     // ============================================
+    // Nominal yang dibayar harus sama dengan total yang tersimpan saat checkout
     const notifiedAmount = parseFloat(notification.gross_amount);
     if (Math.abs(notifiedAmount - Number(order.total_harga)) > 1) {
       console.error(`Amount mismatch order ${order.id}: expected ${order.total_harga}, got ${notifiedAmount}`);
@@ -91,10 +103,10 @@ Deno.serve(async (req) => {
     }
 
     // ============================================
-    // 5. UPDATE ATOMIK (status + pengembalian stok dalam satu transaksi DB)
-    //    Fungsi mengunci baris pesanan dan hanya mengizinkan transisi yang sah,
-    //    sehingga notifikasi ganda/bersamaan tidak memproses dua kali.
+    // 5. UPDATE STATUS + STOK SEKALIGUS
     // ============================================
+    // Dikerjakan di database dalam satu transaksi: bila Midtrans mengirim notifikasi
+    // yang sama dua kali, pesanan tetap hanya diproses sekali.
     const { data: result, error: rpcError } = await supabase.rpc("proses_status_pembayaran", {
       p_pesanan_id: order.id,
       p_status: newStatus,
@@ -114,12 +126,16 @@ Deno.serve(async (req) => {
 
     return jsonResponse({ success: true, message: "OK" }, 200);
   } catch (err) {
+    // Tetap balas 200 agar Midtrans tidak mengulang terus; error dicatat di log untuk dicek
     console.error("Webhook error:", err);
     return jsonResponse({ success: false, error: { code: "INTERNAL_ERROR", message: "Error logged" } }, 200);
   }
 });
 
-/** Perbandingan string waktu-konstan (mencegah timing attack pada signature). */
+/**
+ * Membandingkan dua signature tanpa berhenti di karakter pertama yang berbeda, agar
+ * signature tidak bisa ditebak dari cepat-lambatnya respons. Dipakai di langkah 1.
+ */
 function safeEqual(a: string, b: string): boolean {
   if (a.length !== b.length) return false;
   let diff = 0;
