@@ -54,3 +54,14 @@ body {
 .scrollbar-hide::-webkit-scrollbar {
   display: none;
 }
+
+/* ── Tema admin lama ────────────────────────────────────────────────────────
+   Palet abu-abu/hijau panel admin (kelas "admin-legacy" dipasang di <body> oleh
+   AdminLayout & AdminLogin). Di main warna ini sudah sama dengan palet global; blok
+   ini menjaga tampilan admin tetap sama jika palet global nanti digelapkan (PR UI). */
+.admin-legacy .text-neutral-400 { color: #B3A296; }
+.admin-legacy .text-neutral-500 { color: #8A7B72; }
+.admin-legacy .text-neutral-600 { color: #6B5D54; }
+.admin-legacy .hover\:text-neutral-500:hover { color: #8A7B72; }
+.admin-legacy .hover\:text-neutral-600:hover { color: #6B5D54; }
+.admin-legacy .text-success { color: #4B7A57; }

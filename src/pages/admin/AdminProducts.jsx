@@ -1,11 +1,8 @@
 // src/pages/admin/AdminProducts.jsx
 import { useEffect, useState, useMemo } from "react";
 import { supabase } from "../../lib/supabaseClient";
-import { Pencil, Trash2, Plus, X, Settings2, Search, Power } from "lucide-react";
-import toast from "react-hot-toast";
+import { Pencil, Trash2, Plus, X, Settings2, Search, AlertTriangle, PackageX } from "lucide-react";
 import VariantManager from "../../components/admin/VariantManager";
-import StockStepper from "../../components/admin/StockStepper";
-import { compressImage } from "../../utils/compressImage";
 
 const emptyForm = {
   name: "", description: "", price: "", stock: "", image_url: "", category_id: "", is_active: true,
@@ -15,7 +12,7 @@ const emptyForm = {
 function StockBar({ stok }) {
   const max = 10;
   const pct = Math.min((stok / max) * 100, 100);
-  const color = stok === 0 ? "bg-danger" : stok <= 5 ? "bg-amber-500" : "bg-amber-400";
+  const color = stok === 0 ? "bg-danger" : stok <= 5 ? "bg-orange-500" : "bg-amber-400";
   return (
     <div className="w-20 h-1.5 bg-neutral-100 rounded-full overflow-hidden">
       <div className={`h-full rounded-full transition-all ${color}`} style={{ width: `${pct}%` }} />
@@ -35,23 +32,6 @@ export default function AdminProducts() {
   const [error, setError] = useState("");
   const [confirmDelete, setConfirmDelete] = useState(null);
   const [managingVariantsFor, setManagingVariantsFor] = useState(null);
-  const [imagePreview, setImagePreview] = useState("");
-
-  // Pratinjau foto yang dipilih
-  useEffect(() => {
-    if (!imageFile) { setImagePreview(""); return; }
-    const url = URL.createObjectURL(imageFile);
-    setImagePreview(url);
-    return () => URL.revokeObjectURL(url);
-  }, [imageFile]);
-
-  // Esc menutup modal form
-  useEffect(() => {
-    if (!showForm) return;
-    const onKey = (e) => { if (e.key === "Escape") setShowForm(false); };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [showForm]);
 
   // Filter & search state
   const [filter, setFilter] = useState("all");       // all | rendah | habis | nonaktif
@@ -160,19 +140,13 @@ export default function AdminProducts() {
     let finalImageUrl = form.image_url.trim();
 
     if (imageFile) {
-      let compressed;
-      try {
-        compressed = await compressImage(imageFile);
-      } catch (err) {
-        setSaving(false);
-        return setError(err.message);
-      }
-      const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${compressed.ext}`;
-
+      const fileExt = imageFile.name.split('.').pop();
+      const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
+      
       const { error: uploadError } = await supabase.storage
         .from("product-images")
-        .upload(fileName, compressed.blob, { contentType: compressed.blob.type });
-
+        .upload(fileName, imageFile);
+        
       if (uploadError) {
         setSaving(false);
         return setError("Gagal upload gambar: " + uploadError.message);
@@ -210,29 +184,6 @@ export default function AdminProducts() {
     fetchProducts();
   }
 
-  /** Simpan stok langsung dari daftar. Mengembalikan true bila berhasil. */
-  async function saveStock(product, stock) {
-    const { error: stockError } = await supabase.from("produk").update({ stok: stock }).eq("id", product.id);
-    if (stockError) {
-      toast.error(`Gagal menyimpan stok ${product.name}`);
-      return false;
-    }
-    setProducts((prev) => prev.map((p) => (p.id === product.id ? { ...p, stock } : p)));
-    toast.success(`Stok ${product.name} jadi ${stock}`);
-    return true;
-  }
-
-  async function toggleActive(product) {
-    const next = !product.is_active;
-    const { error: activeError } = await supabase.from("produk").update({ aktif: next }).eq("id", product.id);
-    if (activeError) {
-      toast.error("Gagal mengubah status produk");
-      return;
-    }
-    setProducts((prev) => prev.map((p) => (p.id === product.id ? { ...p, is_active: next } : p)));
-    toast.success(`${product.name} ${next ? "diaktifkan" : "dinonaktifkan"}`);
-  }
-
   async function handleDelete(id) {
     const { error: deleteError } = await supabase.from("produk").delete().eq("id", id);
     if (deleteError) {
@@ -243,60 +194,18 @@ export default function AdminProducts() {
     setConfirmDelete(null);
   }
 
-  /* ─── Komponen baris (memakai handler di atas) ─── */
-  function renderThumb(product) {
-    return product.image_url ? (
-      <img src={product.image_url} alt="" className="w-12 h-12 object-cover rounded-lg border border-neutral-200 shrink-0" />
-    ) : (
-      <div className="w-12 h-12 bg-neutral-100 rounded-lg border border-neutral-200 flex items-center justify-center text-xs text-neutral-400 font-medium shrink-0">Kosong</div>
-    );
-  }
-
-  function renderActiveBadge(active) {
-    return (
-      <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${active ? "bg-green-100 text-success" : "bg-neutral-200 text-neutral-500"}`}>
-        {active ? "Aktif" : "Nonaktif"}
-      </span>
-    );
-  }
-
-  function renderRowActions(product) {
-    const btn = "flex h-10 w-10 items-center justify-center rounded-lg transition-colors";
-    return (
-      <div className="flex items-center justify-center gap-1">
-        <button onClick={() => toggleActive(product)} aria-label={product.is_active ? `Nonaktifkan ${product.name}` : `Aktifkan ${product.name}`}
-          title={product.is_active ? "Nonaktifkan" : "Aktifkan"}
-          className={`${btn} ${product.is_active ? "text-neutral-500 hover:bg-neutral-100" : "text-success hover:bg-green-50"}`}>
-          <Power size={16} />
-        </button>
-        <button onClick={() => setManagingVariantsFor({ id: product.id, name: product.name })} aria-label={`Kelola varian ${product.name}`}
-          title="Kelola Varian" className={`${btn} text-neutral-500 hover:text-primary hover:bg-primary/10`}>
-          <Settings2 size={16} />
-        </button>
-        <button onClick={() => openEdit(product)} aria-label={`Edit ${product.name}`}
-          title="Edit Produk" className={`${btn} text-blue-600 hover:bg-blue-50`}>
-          <Pencil size={16} />
-        </button>
-        <button onClick={() => setConfirmDelete({ id: product.id, name: product.name, is_active: product.is_active })} aria-label={`Hapus ${product.name}`}
-          title="Hapus Produk" className={`${btn} text-danger hover:bg-red-50`}>
-          <Trash2 size={16} />
-        </button>
-      </div>
-    );
-  }
-
   /* ─── Filter pill config ─── */
   const filterOptions = [
     { key: "all",      label: "Semua",       count: null },
-    { key: "rendah",   label: "Stok Rendah", count: rendahCount,   badgeClass: "bg-amber-100 text-amber-700" },
-    { key: "habis",    label: "Habis",       count: habisCount,    badgeClass: "bg-red-100 text-danger" },
+    { key: "rendah",   label: "Stok Rendah", count: rendahCount,   icon: AlertTriangle, badgeClass: "bg-amber-100 text-amber-700" },
+    { key: "habis",    label: "Habis",       count: habisCount,    icon: PackageX,      badgeClass: "bg-red-100 text-danger" },
     { key: "nonaktif", label: "Nonaktif",    count: nonaktifCount, badgeClass: "bg-neutral-200 text-neutral-500" },
   ];
 
   return (
-    <div className="p-4 sm:p-6 space-y-5">
+    <div className="p-6 space-y-5">
       {/* Header */}
-      <div className="flex items-center justify-between gap-3">
+      <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold font-display text-neutral-900">Kelola Produk</h1>
         <button
           onClick={openCreate}
@@ -321,8 +230,7 @@ export default function AdminProducts() {
           {searchQuery && (
             <button
               onClick={() => setSearchQuery("")}
-              aria-label="Hapus pencarian"
-              className="absolute right-1.5 top-1/2 -translate-y-1/2 p-1.5 text-neutral-400 hover:text-neutral-600"
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600"
             >
               <X size={14} />
             </button>
@@ -356,9 +264,10 @@ export default function AdminProducts() {
                 : "bg-surface text-neutral-500 border-neutral-200 hover:border-neutral-300 hover:text-neutral-700"
             }`}
           >
+            {opt.icon && filter !== opt.key && <opt.icon size={12} />}
             {opt.label}
             {opt.count != null && opt.count > 0 && (
-              <span className={`text-xs font-bold px-1.5 py-0.5 rounded-full ${
+              <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${
                 filter === opt.key ? "bg-white/20 text-white" : opt.badgeClass
               }`}>
                 {opt.count}
@@ -389,55 +298,109 @@ export default function AdminProducts() {
         </div>
       ) : (
         <div className="bg-surface border border-neutral-200 rounded-2xl overflow-hidden shadow-sm">
-          {/* HP: kartu */}
-          <ul className="md:hidden divide-y divide-neutral-100">
-            {filtered.map((p) => (
-              <li key={p.id} className={`p-4 ${p.is_active && p.stock === 0 ? "bg-red-50/40" : ""}`}>
-                <div className="flex items-start gap-3">
-                  {renderThumb(p)}
-                  <div className="min-w-0 flex-1">
-                    <p className="font-semibold text-neutral-900">{p.name}</p>
-                    <p className="text-xs text-neutral-500">{p.category_name} · Rp{Number(p.price).toLocaleString("id-ID")}</p>
-                    <div className="mt-1">{renderActiveBadge(p.is_active)}</div>
-                  </div>
-                </div>
-                <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
-                  <StockStepper product={p} onSave={saveStock} />
-                  {renderRowActions(p)}
-                </div>
-              </li>
-            ))}
-          </ul>
-
-          {/* Desktop: tabel */}
-          <div className="hidden md:block overflow-x-auto">
+          <div className="overflow-x-auto">
             <table className="w-full text-sm border-collapse">
               <thead>
-                <tr className="bg-neutral-50 border-b border-neutral-200 text-xs uppercase tracking-widest text-neutral-500 font-bold">
+                <tr className="bg-neutral-50 border-b border-neutral-200 text-[11px] uppercase tracking-widest text-neutral-400 font-bold">
                   <th className="text-left px-5 py-3">Produk</th>
                   <th className="text-left px-5 py-3">Kategori</th>
                   <th className="text-right px-5 py-3">Harga</th>
                   <th className="text-left px-5 py-3">Stok</th>
                   <th className="text-center px-5 py-3">Status</th>
-                  <th className="text-center px-5 py-3">Aksi</th>
+                  <th className="text-center px-5 py-3 w-28">Aksi</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-neutral-100">
-                {filtered.map((p) => (
-                  <tr key={p.id} className={`hover:bg-neutral-50/80 transition-colors align-middle ${p.is_active && p.stock === 0 ? "bg-red-50/40" : ""}`}>
-                    <td className="px-5 py-3">
-                      <div className="flex items-center gap-3">
-                        {renderThumb(p)}
-                        <p className="font-semibold text-neutral-900 truncate max-w-[180px]">{p.name}</p>
-                      </div>
-                    </td>
-                    <td className="px-5 py-3 text-neutral-500">{p.category_name}</td>
-                    <td className="px-5 py-3 text-right whitespace-nowrap">Rp{Number(p.price).toLocaleString("id-ID")}</td>
-                    <td className="px-5 py-3"><StockStepper product={p} onSave={saveStock} /></td>
-                    <td className="px-5 py-3 text-center">{renderActiveBadge(p.is_active)}</td>
-                    <td className="px-5 py-3">{renderRowActions(p)}</td>
-                  </tr>
-                ))}
+                {filtered.map((p) => {
+                  const isHabis  = p.is_active && p.stock === 0;
+                  const isRendah = p.is_active && p.stock > 0 && p.stock <= 10;
+
+                  return (
+                    <tr
+                      key={p.id}
+                      className={`hover:bg-neutral-50/80 transition-colors align-middle ${
+                        isHabis ? "bg-red-50/40" : ""
+                      }`}
+                    >
+                      {/* Produk (gambar + nama) */}
+                      <td className="px-5 py-3.5">
+                        <div className="flex items-center gap-3">
+                          {p.image_url ? (
+                            <img src={p.image_url} alt={p.name} className="w-10 h-10 object-cover rounded-lg border border-neutral-200 shrink-0" />
+                          ) : (
+                            <div className="w-10 h-10 bg-neutral-100 rounded-lg border border-neutral-200 flex items-center justify-center text-[9px] text-neutral-400 font-medium shrink-0">Kosong</div>
+                          )}
+                          <p className="font-semibold text-neutral-900 truncate max-w-[180px]">{p.name}</p>
+                        </div>
+                      </td>
+
+                      {/* Kategori */}
+                      <td className="px-5 py-3.5 text-neutral-500">{p.category_name}</td>
+
+                      {/* Harga */}
+                      <td className="px-5 py-3.5 text-right whitespace-nowrap">
+                        Rp{Number(p.price).toLocaleString("id-ID")}
+                      </td>
+
+                      {/* Stok */}
+                      <td className="px-5 py-3.5">
+                        {isHabis ? (
+                          <div className="flex flex-col gap-1">
+                            <span className="font-bold text-danger text-base">0</span>
+                            <span className="text-[10px] font-bold text-danger bg-red-100 px-1.5 py-0.5 rounded-full w-fit">HABIS</span>
+                          </div>
+                        ) : isRendah ? (
+                          <div className="flex flex-col gap-1.5">
+                            <span className={`font-bold text-base ${p.stock <= 5 ? "text-orange-600" : "text-amber-600"}`}>
+                              {p.stock}
+                            </span>
+                            <StockBar stok={p.stock} />
+                          </div>
+                        ) : (
+                          <span className="text-neutral-700">{p.stock}</span>
+                        )}
+                      </td>
+
+                      {/* Status */}
+                      <td className="px-5 py-3.5 text-center">
+                        <span
+                          className={`text-xs font-semibold px-2.5 py-1 rounded-full ${
+                            p.is_active ? "bg-green-100 text-success" : "bg-neutral-200 text-neutral-500"
+                          }`}
+                        >
+                          {p.is_active ? "Aktif" : "Nonaktif"}
+                        </span>
+                      </td>
+
+                      {/* Aksi */}
+                      <td className="px-5 py-3.5 text-center">
+                        <div className="flex items-center justify-center gap-1.5">
+                          <button
+                            onClick={() => setManagingVariantsFor({ id: p.id, name: p.name })}
+                            title="Kelola Varian"
+                            className="p-1.5 rounded-lg text-neutral-400 hover:text-primary hover:bg-primary/10 transition-colors"
+                          >
+                            <Settings2 size={15} />
+                          </button>
+                          <button
+                            onClick={() => openEdit(p)}
+                            title="Edit Produk"
+                            className="p-1.5 rounded-lg text-blue-500 hover:text-blue-600 hover:bg-blue-50 transition-colors"
+                          >
+                            <Pencil size={15} />
+                          </button>
+                          <button
+                            onClick={() => setConfirmDelete({ id: p.id, name: p.name })}
+                            title="Hapus Produk"
+                            className="p-1.5 rounded-lg text-danger hover:opacity-70 hover:bg-red-50 transition-colors"
+                          >
+                            <Trash2 size={15} />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
@@ -462,51 +425,36 @@ export default function AdminProducts() {
               <h2 className="font-bold text-lg font-display text-neutral-900">
                 {editingId ? "Edit Produk" : "Tambah Produk"}
               </h2>
-              <button type="button" onClick={() => setShowForm(false)} aria-label="Tutup form" className="p-2 -m-2 text-neutral-400 hover:text-neutral-600">
+              <button type="button" onClick={() => setShowForm(false)} className="text-neutral-400 hover:text-neutral-600">
                 <X size={20} />
               </button>
             </div>
 
-            <label htmlFor="pf-name" className="mb-1 block text-xs font-semibold text-neutral-600">Nama produk</label>
             <input
-              id="pf-name"
-              placeholder="mis. Ayam Geprek Keju"
+              placeholder="Nama produk"
               value={form.name}
               onChange={(e) => setForm({ ...form, name: e.target.value })}
               className="w-full border border-neutral-200 rounded-lg px-3 py-2 text-sm"
             />
-            <label htmlFor="pf-desc" className="mb-1 block text-xs font-semibold text-neutral-600">Deskripsi <span className="font-normal text-neutral-400">(opsional)</span></label>
             <textarea
-              id="pf-desc"
-              placeholder="Deskripsi singkat menu"
+              placeholder="Deskripsi"
               value={form.description}
               onChange={(e) => setForm({ ...form, description: e.target.value })}
               className="w-full border border-neutral-200 rounded-lg px-3 py-2 text-sm"
               rows={2}
             />
             <div className="grid grid-cols-2 gap-3">
-              <div>
-              <label htmlFor="pf-price" className="mb-1 block text-xs font-semibold text-neutral-600">Harga (Rp)</label>
               <input
-                id="pf-price"
                 type="number"
-                inputMode="numeric"
-                min={0}
-                placeholder="25000"
+                placeholder="Harga"
                 value={form.price}
                 onChange={(e) => setForm({ ...form, price: e.target.value })}
-                className="w-full border border-neutral-200 rounded-lg px-3 py-2 text-sm"
+                className="border border-neutral-200 rounded-lg px-3 py-2 text-sm"
               />
-              </div>
-              <div>
-              <label htmlFor="pf-stock" className="mb-1 block text-xs font-semibold text-neutral-600">Stok</label>
               <div className="relative">
                 <input
-                  id="pf-stock"
                   type="number"
-                  inputMode="numeric"
-                  min={0}
-                  placeholder="0"
+                  placeholder="Stok"
                   value={form.stock}
                   onChange={(e) => setForm({ ...form, stock: e.target.value })}
                   className={`w-full border rounded-lg px-3 py-2 text-sm ${
@@ -518,17 +466,14 @@ export default function AdminProducts() {
                   }`}
                 />
                 {Number(form.stock) <= 10 && form.stock !== "" && (
-                  <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs font-bold text-amber-600">
+                  <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] font-bold text-amber-600">
                     {Number(form.stock) === 0 ? "HABIS" : "RENDAH"}
                   </span>
                 )}
               </div>
-              </div>
             </div>
 
-            <label htmlFor="pf-cat" className="mb-1 block text-xs font-semibold text-neutral-600">Kategori</label>
             <select
-              id="pf-cat"
               value={form.category_id}
               onChange={(e) => setForm({ ...form, category_id: e.target.value })}
               className="w-full border border-neutral-200 rounded-lg px-3 py-2 text-sm text-neutral-900"
@@ -540,28 +485,16 @@ export default function AdminProducts() {
             </select>
 
             <div className="space-y-1">
-              <label htmlFor="pf-image" className="mb-1 block text-xs font-semibold text-neutral-600">Foto produk</label>
-              {(imagePreview || form.image_url) && (
-                <img
-                  src={imagePreview || form.image_url}
-                  alt="Pratinjau foto produk"
-                  className="h-32 w-32 rounded-xl border border-neutral-200 object-cover"
-                />
-              )}
+              <label className="text-sm font-medium text-neutral-700">Gambar Produk</label>
               <input
-                id="pf-image"
                 type="file"
-                accept="image/jpeg,image/png,image/webp"
-                onChange={(e) => setImageFile(e.target.files[0] ?? null)}
+                accept="image/*"
+                onChange={(e) => setImageFile(e.target.files[0])}
                 className="w-full border border-neutral-200 rounded-lg px-3 py-2 text-sm bg-white"
               />
-              <p className="text-xs text-neutral-500">
-                {imageFile
-                  ? "Foto akan dikecilkan otomatis sebelum diunggah."
-                  : form.image_url
-                    ? "Pilih foto baru untuk mengganti."
-                    : "JPG, PNG, atau WebP. Foto dari kamera HP akan dikecilkan otomatis."}
-              </p>
+              {form.image_url && !imageFile && (
+                <p className="text-xs text-neutral-500 italic">Sudah ada gambar. Unggah baru untuk mengganti.</p>
+              )}
             </div>
             <label className="flex items-center gap-2 text-sm text-neutral-700">
               <input
@@ -596,21 +529,9 @@ export default function AdminProducts() {
             <p className="text-sm text-neutral-500 text-center mb-1">
               Yakin hapus <span className="font-semibold text-neutral-800">{confirmDelete.name}</span>?
             </p>
-            <p className="text-xs text-amber-700 text-center mb-5">
+            <p className="text-xs text-amber-600 text-center mb-5">
               Produk yang pernah dipesan sebaiknya dinonaktifkan saja, bukan dihapus.
             </p>
-            {confirmDelete.is_active && (
-              <button
-                onClick={() => {
-                  const target = products.find((p) => p.id === confirmDelete.id);
-                  setConfirmDelete(null);
-                  if (target) toggleActive(target);
-                }}
-                className="mb-3 w-full rounded-xl bg-neutral-900 py-2.5 font-semibold text-white hover:bg-neutral-700"
-              >
-                Nonaktifkan saja
-              </button>
-            )}
             <div className="flex gap-3">
               <button
                 onClick={() => setConfirmDelete(null)}
