@@ -1,4 +1,5 @@
 // src/components/ErrorBoundary.jsx
+import { AlertTriangle } from "lucide-react";
 import { Component } from "react";
 
 /**
@@ -31,7 +32,7 @@ export default class ErrorBoundary extends Component {
         <div className="min-h-screen bg-background flex items-center justify-center px-4">
           <div className="max-w-sm text-center">
             <div className="w-16 h-16 rounded-full bg-red-100 flex items-center justify-center mx-auto mb-4">
-              <span className="text-3xl">⚠️</span>
+              <AlertTriangle size={28} className="text-amber-600" aria-hidden="true" />
             </div>
             <h1 className="font-display text-xl font-bold text-neutral-900 mb-2">
               Ups, Terjadi Kesalahan
@@ -42,7 +43,7 @@ export default class ErrorBoundary extends Component {
             {this.state.error && (
               <details className="mb-4 text-left">
                 <summary className="text-xs text-neutral-400 cursor-pointer mb-1">Detail error (untuk developer)</summary>
-                <pre className="text-[11px] bg-neutral-100 rounded-lg p-3 text-neutral-600 overflow-auto max-h-32">
+                <pre className="text-xs bg-neutral-100 rounded-lg p-3 text-neutral-600 overflow-auto max-h-32">
                   {this.state.error.message}
                 </pre>
               </details>

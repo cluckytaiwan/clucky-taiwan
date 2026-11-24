@@ -6,10 +6,7 @@ import { useCartStore } from "../store/cartStore";
 import { useVariantModalStore } from "../store/variantModalStore";
 import { getOptimizedImageUrl } from "../utils/imageUrl";
 import toast from "react-hot-toast";
-import {
-  Sparkles, ShoppingBag, ArrowRight, Tag,
-  ChevronRight, ChevronLeft, Star, Zap, TrendingUp,
-} from "lucide-react";
+import { ShoppingBag, ArrowRight, ChevronRight, ChevronLeft, Star, Zap, TrendingUp, Frown, SearchX } from "lucide-react";
 import "./BudgetRecommender.css";
 
 // ── Konstanta ──────────────────────────────────────────────────────────────
@@ -18,16 +15,17 @@ const SLIDER_MAX = 100_000; // batas atas slider (bisa diketik lebih)
 const SLIDER_MIN_FALLBACK = 5_000;
 const MAX_BUDGET = 1_000_000; // batas input manual — di atas ini rekomendasi tidak bermakna
 
-// Label per jenis rekomendasi (ditentukan algoritma, bukan urutan tampil)
+// Label per jenis rekomendasi (ditentukan algoritma, bukan urutan tampil).
+// Warna hanya untuk badge; tombol aksi selalu warna utama agar konsisten.
 const KIND_CONFIG = {
-  best:  { label: "Paling Pas",   icon: Star,       color: "text-amber-600 bg-amber-100 border-amber-200",       btnClass: "bg-primary hover:bg-primary-dark" },
-  more:  { label: "Lebih Banyak", icon: TrendingUp, color: "text-violet-700 bg-violet-100 border-violet-200",    btnClass: "bg-violet-600 hover:bg-violet-700" },
-  saver: { label: "Lebih Hemat",  icon: Zap,        color: "text-emerald-700 bg-emerald-100 border-emerald-200", btnClass: "bg-emerald-600 hover:bg-emerald-700" },
+  best:  { label: "Paling Pas",   icon: Star,       color: "text-primary-dark bg-primary/10 border-primary/20"  },
+  more:  { label: "Lebih Banyak", icon: TrendingUp, color: "text-neutral-900 bg-secondary-light border-secondary/40"  },
+  saver: { label: "Lebih Hemat",  icon: Zap,        color: "text-green-800 bg-green-100 border-green-200"  },
 };
 
 // Warna progress bar berdasarkan efisiensi budget
 function getEfficiencyColor(efficiency) {
-  if (efficiency >= 90) return "bg-emerald-500";
+  if (efficiency >= 90) return "bg-green-500";
   if (efficiency >= 70) return "bg-primary";
   if (efficiency >= 50) return "bg-amber-400";
   return "bg-neutral-300";
@@ -177,22 +175,22 @@ export default function BudgetRecommender({ products, onCartOpen }) {
   const comboNeedsVariant = (items) => items.some((i) => i.has_variants);
 
   return (
-    <section id="rekomendasi" className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8 scroll-mt-20">
+    <section id="rekomendasi" aria-labelledby="rekomendasi-title" className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8 scroll-mt-20">
       {/* ── Judul section ──────────────────────────────────────────────────── */}
       <div className="text-center mb-8">
-        <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/20 text-primary font-semibold text-sm mb-4">
+        <p className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary/10 border border-primary/20 text-primary font-semibold text-sm mb-3">
           Rekomendasi Sesuai Budget
-        </div>
-        {/* <h2 className="font-display text-3xl sm:text-4xl font-extrabold text-neutral-900 mb-3">
-          Berapa Uangmu Hari Ini?
-        </h2> */}
+        </p>
+        <h2 id="rekomendasi-title" className="font-display text-3xl sm:text-4xl font-extrabold text-neutral-900 mb-2">
+          Bingung pilih menu? Atur budget-mu
+        </h2>
         <p className="text-neutral-500 font-body text-base max-w-lg mx-auto">
           Geser slider atau ketik nominal budget — kami otomatis carikan kombinasi menu terbaik untukmu.
         </p>
       </div>
 
       {/* ── Panel Utama ─────────────────────────────────────────────────────── */}
-      <div className="rounded-3xl bg-gradient-to-br from-primary/8 via-white to-secondary/8 border border-neutral-200/80 shadow-sm overflow-hidden">
+      <div className="mx-auto max-w-5xl rounded-2xl bg-gradient-to-br from-primary/5 via-white to-secondary/10 border border-neutral-200/80 shadow-sm overflow-hidden">
 
         {/* ── Budget Input Area ───────────────────────────────────────────── */}
         <div className="px-6 pt-8 pb-6 sm:px-10 bg-white/60 border-b border-neutral-100">
@@ -271,17 +269,14 @@ export default function BudgetRecommender({ products, onCartOpen }) {
         <div className="px-6 py-6 sm:px-10">
           {!hasSearched || budget === 0 ? (
             /* Empty state — belum isi budget */
-            <div className="flex flex-col items-center justify-center py-12 text-center">
-              {/* <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center mb-4">
-                <Sparkles size={28} className="text-primary" />
-              </div> */}
-              <p className="font-semibold text-neutral-700 mb-1">Geser slider di atas untuk mulai</p>
+            <div className="flex flex-col items-center justify-center py-6 text-center">
+              <p className="font-semibold text-neutral-700 mb-1">Geser slider atau ketik nominal untuk mulai</p>
               <p className="text-sm text-neutral-400">Rekomendasi paket menu akan langsung muncul di sini</p>
             </div>
           ) : budget < minPrice ? (
             /* Budget terlalu kecil */
             <div className="flex flex-col items-center justify-center py-10 text-center">
-              <div className="text-4xl mb-3">😢</div>
+              <Frown size={36} className="mb-3 text-neutral-400" aria-hidden="true" />
               <p className="font-bold text-neutral-800 mb-1">Budget belum cukup</p>
               <p className="text-sm text-neutral-500">
                 Minimal <span className="font-semibold text-primary">{formatRupiah(minPrice)}</span> untuk 1 porsi menu termurah kami.
@@ -290,7 +285,7 @@ export default function BudgetRecommender({ products, onCartOpen }) {
           ) : recommendations.length === 0 ? (
             /* Budget ada tapi tidak ada yang cocok */
             <div className="flex flex-col items-center justify-center py-10 text-center">
-              <div className="text-4xl mb-3">🤔</div>
+              <SearchX size={36} className="mb-3 text-neutral-400" aria-hidden="true" />
               <p className="font-bold text-neutral-800 mb-1">Belum ada kombinasi yang pas</p>
               <p className="text-sm text-neutral-500">Coba naikkan sedikit budget-mu.</p>
             </div>
@@ -349,7 +344,7 @@ export default function BudgetRecommender({ products, onCartOpen }) {
                       {/* Card header dengan badge ranking */}
                       <div className="px-4 pt-4 pb-3 border-b border-neutral-50">
                         <div className="flex items-center justify-between mb-1">
-                          <span className={`inline-flex items-center gap-1.5 text-[11px] font-bold px-2.5 py-1 rounded-full border ${rank.color} ${combo.kind === "best" ? "badge-best" : ""}`}>
+                          <span className={`inline-flex items-center gap-1.5 text-xs font-bold px-2.5 py-1 rounded-full border ${rank.color} ${combo.kind === "best" ? "badge-best" : ""}`}>
                             <RankIcon size={10} />
                             {rank.label}
                           </span>
@@ -360,8 +355,7 @@ export default function BudgetRecommender({ products, onCartOpen }) {
 
                         {/* Badge ada varian */}
                         {needsVariant && (
-                          <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-amber-700 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-full mt-1">
-                            <Tag size={9} />
+                          <span className="inline-flex items-center gap-1 text-xs font-semibold text-amber-700 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-full mt-1">
                             Pilih Varian di Detail
                           </span>
                         )}
@@ -394,7 +388,7 @@ export default function BudgetRecommender({ products, onCartOpen }) {
                                   {formatRupiah((item.min_price ?? item.price) * qty)}
                                 </p>
                                 {item.has_variants && (
-                                  <span className="text-[10px] text-amber-500 font-semibold">+varian</span>
+                                  <span className="text-xs text-amber-500 font-semibold">+varian</span>
                                 )}
                               </div>
                             </div>
@@ -406,7 +400,7 @@ export default function BudgetRecommender({ products, onCartOpen }) {
                       <div className="px-4 pb-4 mt-1">
                         {/* Progress bar efisiensi budget */}
                         <div className="mb-3">
-                          <div className="flex justify-between text-[11px] text-neutral-400 mb-1.5">
+                          <div className="flex justify-between text-xs text-neutral-400 mb-1.5">
                             <span>Efisiensi budget</span>
                             <span className="font-bold text-neutral-600">{efficiency}%</span>
                           </div>
@@ -421,21 +415,21 @@ export default function BudgetRecommender({ products, onCartOpen }) {
                         {/* Total & sisa */}
                         <div className="flex justify-between items-end mb-3">
                           <div>
-                            <p className="text-[11px] text-neutral-400 mb-0.5">
+                            <p className="text-xs text-neutral-400 mb-0.5">
                               {combo.isEstimate ? "Mulai dari" : "Total"}
                             </p>
                             <p className="font-display font-extrabold text-xl text-neutral-900">
                               {formatRupiah(combo.totalPrice)}
                             </p>
                             {combo.isEstimate && (
-                              <p className="text-[11px] text-amber-600 font-medium mt-0.5">
+                              <p className="text-xs text-amber-600 font-medium mt-0.5">
                                 Bisa berubah sesuai varian pilihanmu
                               </p>
                             )}
                           </div>
                           {combo.leftover > 0 && !combo.isEstimate && (
                             <div className="text-right">
-                              <p className="text-[11px] text-neutral-400 mb-0.5">Sisa budget</p>
+                              <p className="text-xs text-neutral-400 mb-0.5">Sisa budget</p>
                               <p className="text-sm font-bold text-success">{formatRupiah(combo.leftover)}</p>
                             </div>
                           )}
@@ -445,15 +439,14 @@ export default function BudgetRecommender({ products, onCartOpen }) {
                         {isAdded ? (
                           <button
                             onClick={() => handleBuyPackage(combo.items)}
-                            className="w-full flex items-center justify-center gap-2 bg-neutral-500 hover:bg-neutral-600 shadow-inner active:scale-95 text-white font-bold py-3 rounded-xl transition-all text-sm"
+                            className="w-full flex items-center justify-center gap-2 border-2 border-primary bg-white text-primary hover:bg-primary/5 active:scale-95 font-bold py-2.5 rounded-xl transition-all text-sm"
                           >
-                            <ShoppingBag size={15} />
                             Lihat Keranjang
                           </button>
                         ) : needsVariant ? (
                           <button
                             onClick={() => handleBuyPackage(combo.items)}
-                            className="w-full flex items-center justify-center gap-2 bg-amber-500 hover:bg-amber-600 active:scale-95 text-white font-bold py-3 rounded-xl transition-all text-sm"
+                            className="w-full flex items-center justify-center gap-2 bg-primary hover:bg-primary-dark active:scale-95 text-white font-bold py-3 rounded-xl transition-all text-sm"
                           >
                             Pilih Varian Dulu
                             <ArrowRight size={15} />
@@ -461,9 +454,8 @@ export default function BudgetRecommender({ products, onCartOpen }) {
                         ) : (
                           <button
                             onClick={() => handleBuyPackage(combo.items)}
-                            className={`w-full flex items-center justify-center gap-2 active:scale-95 text-white font-bold py-3 rounded-xl transition-all text-sm ${rank.btnClass}`}
+                            className="w-full flex items-center justify-center gap-2 bg-primary hover:bg-primary-dark active:scale-95 text-white font-bold py-3 rounded-xl transition-all text-sm"
                           >
-                            <ShoppingBag size={15} />
                             Pesan Sekarang
                           </button>
                         )}
@@ -477,7 +469,6 @@ export default function BudgetRecommender({ products, onCartOpen }) {
               {/* Hint tambahan jika ada produk bervarian */}
               {/* {recommendations.some((c) => comboNeedsVariant(c.items)) && (
                 <p className="text-center text-xs text-neutral-400 mt-4 flex items-center justify-center gap-1.5">
-                  <Tag size={11} />
                   Produk bertanda <span className="font-semibold text-amber-600">+varian</span> perlu pilih ukuran/rasa di halaman detail
                 </p>
               )} */}

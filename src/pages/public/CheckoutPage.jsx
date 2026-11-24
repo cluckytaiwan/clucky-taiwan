@@ -2,7 +2,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import CheckoutForm, { getPendingPayment, clearPendingPayment } from "../../components/CheckoutForm";
-import { CheckCircle2, Clock, CreditCard, X, Copy, Check } from "lucide-react";
+import { CheckCircle2, Clock, X, Copy, Check, QrCode } from "lucide-react";
 import { formatRupiah } from "../../utils/formatCurrency";
 import { loadSnap } from "../../utils/loadSnap";
 
@@ -29,7 +29,7 @@ function PendingPaymentBanner({ pending, onPayNow, onDismiss }) {
             onClick={onPayNow}
             className="flex items-center gap-1.5 bg-primary hover:bg-primary-dark text-white text-xs font-bold px-3.5 py-2 rounded-xl transition-colors"
           >
-            <CreditCard size={14} />
+            <QrCode size={14} />
             Lanjutkan Bayar
           </button>
           <button

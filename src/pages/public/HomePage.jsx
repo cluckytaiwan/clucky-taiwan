@@ -60,7 +60,7 @@ export default function HomePage() {
             >
               <ShoppingBag size={20} />
               {itemCount > 0 && (
-                <span className="absolute -right-1 -top-1 flex h-5 min-w-[20px] items-center justify-center rounded-full bg-primary px-1.5 font-body text-[11px] font-bold text-white shadow-sm ring-2 ring-white">
+                <span className="absolute -right-1 -top-1 flex h-5 min-w-[20px] items-center justify-center rounded-full bg-primary px-1.5 font-body text-xs font-bold text-white shadow-sm ring-2 ring-white">
                   {itemCount}
                 </span>
               )}
@@ -89,10 +89,10 @@ export default function HomePage() {
             Renyah di luar, juicy di dalam. Dibuat dengan resep asli Taiwan yang bikin ketagihan!
           </p>
           <div className="mt-8 flex flex-wrap gap-4">
-            <a href="#katalog" className="h-[52px] px-8 flex items-center justify-center rounded-2xl bg-primary font-body text-[15px] font-bold text-white hover:bg-primary-dark transition-all active:scale-95 shadow-lg shadow-primary/20">
+            <a href="#katalog" className="h-[52px] px-8 flex items-center justify-center rounded-xl bg-primary font-body text-[15px] font-bold text-white hover:bg-primary-dark transition-all active:scale-95 shadow-lg shadow-primary/20">
               Pesan Sekarang
             </a>
-            <a href="#rekomendasi" className="h-[52px] px-8 flex items-center justify-center rounded-2xl border border-white/20 bg-white/5 backdrop-blur-md font-body text-[15px] font-bold text-white hover:bg-white/10 transition-all active:scale-95">
+            <a href="#rekomendasi" className="h-[52px] px-8 flex items-center justify-center rounded-xl border border-white/20 bg-white/5 backdrop-blur-md font-body text-[15px] font-bold text-white hover:bg-white/10 transition-all active:scale-95">
               Cari Paket Sesuai Budget
             </a>
           </div>
@@ -106,8 +106,16 @@ export default function HomePage() {
 
       {/* ===== BUDGET RECOMMENDER ===== */}
       {/* Fitur baru: rekomendasi sesuai budget pelanggan. Disembunyikan saat loading/error agar UX rapi */}
-      {!loading && !error && products.length > 0 && (
-        <BudgetRecommender products={products} onCartOpen={() => setCartOpen(true)} />
+      {loading ? (
+        // Placeholder setinggi panel rekomendasi agar katalog tidak "melompat" saat data masuk
+        <section aria-hidden="true" className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
+          <div className="mx-auto mb-8 h-24 max-w-lg animate-pulse rounded-2xl bg-neutral-100" />
+          <div className="mx-auto h-72 max-w-5xl animate-pulse rounded-2xl bg-neutral-100" />
+        </section>
+      ) : (
+        !error && products.length > 0 && (
+          <BudgetRecommender products={products} onCartOpen={() => setCartOpen(true)} />
+        )
       )}
 
       {/* ===== GRID KATALOG PRODUK ===== */}

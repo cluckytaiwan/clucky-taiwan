@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo } from "react";
 import { Drawer } from "vaul";
-import { X, Sparkles, Tag, Plus, ShoppingBag } from "lucide-react";
+import { X, ShoppingBag } from "lucide-react";
 import { supabase } from "../lib/supabaseClient";
 import { useCartStore } from "../store/cartStore";
 import { useVariantModalStore } from "../store/variantModalStore";
@@ -246,13 +246,11 @@ export default function VariantBottomSheet() {
           {/* Notifikasi Budget Recommender */}
           {preselectVariantIds.length > 0 && (
             <div className="flex items-center gap-2 rounded-xl border border-primary/20 bg-primary/5 px-3 py-2.5 text-[13px] font-medium text-primary">
-              <Sparkles size={14} className="shrink-0" />
               <span>Varian sudah dipilihkan otomatis sesuai budget kamu.</span>
             </div>
           )}
           {otherVariantItems.length > 0 && (
             <div className="flex items-center gap-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2.5 text-[13px] font-medium text-amber-800">
-              <Tag size={14} className="shrink-0" />
               <span>Setelah ini kamu lanjut memilih varian untuk {otherVariantItems.join(", ")}.</span>
             </div>
           )}
@@ -260,7 +258,7 @@ export default function VariantBottomSheet() {
           {/* Selector Varian */}
           {variantTypes.map((tipe) => (
             <div key={tipe}>
-              <h3 className="text-[11px] sm:text-xs font-bold text-neutral-400 uppercase tracking-widest mb-3">
+              <h3 className="text-xs sm:text-xs font-bold text-neutral-400 uppercase tracking-widest mb-3">
                 {tipe}
               </h3>
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-3">
@@ -277,13 +275,13 @@ export default function VariantBottomSheet() {
                       className={`rounded-2xl border-2 p-3 text-left transition-all duration-200 ${
                         isSelected
                           ? "border-primary bg-primary/5"
-                          : "border-orange-50 bg-[#FDF8F3] hover:border-orange-100 hover:bg-[#faeedd]"
+                          : "border-neutral-200 bg-neutral-50 hover:border-neutral-300 hover:bg-neutral-100"
                       }`}
                     >
                       <p className={`font-bold text-[13px] sm:text-sm leading-tight ${isSelected ? "text-primary" : "text-neutral-800"}`}>
                         {v.nama}
                       </p>
-                      <p className={`text-[11px] sm:text-xs font-medium mt-1 sm:mt-1.5 ${isSelected ? "text-primary/80" : "text-neutral-500"}`}>
+                      <p className={`text-xs sm:text-xs font-medium mt-1 sm:mt-1.5 ${isSelected ? "text-primary/80" : "text-neutral-500"}`}>
                         {addedPrice > 0 ? `+ ${formatRupiah(addedPrice)}` : "Standar"}
                       </p>
                     </button>
@@ -302,16 +300,16 @@ export default function VariantBottomSheet() {
         </div>
 
         {/* ── Footer ── */}
-        <div className="p-5 sm:p-6 pt-4 sm:pt-4 mt-2 sm:mt-2 border-t border-neutral-100 flex flex-row items-center justify-between gap-4 bg-white rounded-b-[24px]">
+        <div className="p-5 sm:p-6 pt-4 sm:pt-4 mt-2 sm:mt-2 border-t border-neutral-100 flex flex-row items-center justify-between gap-4 bg-white rounded-b-2xl">
           <div>
-            <p className="text-[11px] sm:text-xs font-medium text-neutral-500 mb-0.5">Total</p>
+            <p className="text-xs sm:text-xs font-medium text-neutral-500 mb-0.5">Total</p>
             <p className="text-lg sm:text-xl font-bold font-display text-primary tracking-tight">
               {formatRupiah(finalPrice)}
             </p>
             
             {/* Peringatan Budget */}
             {referenceBudget != null && finalPrice > referenceBudget && (
-              <p className="text-[10px] sm:text-[11px] text-danger font-medium mt-1 absolute bottom-2 left-5 sm:left-6">
+              <p className="text-xs sm:text-xs text-danger font-medium mt-1 absolute bottom-2 left-5 sm:left-6">
                 Melebihi budget (+{formatRupiah(finalPrice - referenceBudget)})
               </p>
             )}
@@ -323,7 +321,6 @@ export default function VariantBottomSheet() {
             disabled={!canAdd}
             className="bg-primary hover:bg-primary-dark text-white font-bold text-sm px-5 sm:px-6 py-2.5 sm:py-3 rounded-xl flex items-center justify-center gap-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed active:scale-95"
           >
-            <Plus size={16} className="hidden sm:block" />
             <span>Tambah</span>
           </button>
         </div>
@@ -341,7 +338,7 @@ export default function VariantBottomSheet() {
           role="dialog"
           aria-modal="true"
           aria-label={product ? `Pilih varian ${product.name}` : "Pilih varian"}
-          className="bg-white rounded-[24px] w-full max-w-[480px] shadow-2xl flex flex-col relative z-10"
+          className="bg-white rounded-2xl w-full max-w-[480px] shadow-2xl flex flex-col relative z-10"
           onClick={(e) => e.stopPropagation()}
         >
           {renderContent()}
@@ -358,7 +355,7 @@ export default function VariantBottomSheet() {
     <Drawer.Root open={isOpen} onOpenChange={(open) => !open && closeModal()} direction="bottom">
       <Drawer.Portal>
         <Drawer.Overlay className="fixed inset-0 z-[100] bg-black/50 backdrop-blur-sm" />
-        <Drawer.Content className="fixed inset-x-0 bottom-0 z-[100] flex max-h-[90vh] flex-col rounded-t-[24px] bg-white shadow-xl outline-none">
+        <Drawer.Content className="fixed inset-x-0 bottom-0 z-[100] flex max-h-[90vh] flex-col rounded-t-2xl bg-white shadow-xl outline-none">
           {/* Handle for Drawer */}
           <div className="mx-auto mt-4 h-1.5 w-12 rounded-full bg-neutral-300" />
           

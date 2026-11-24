@@ -10,7 +10,7 @@ import toast from "react-hot-toast";
 // Badge status stok — hanya tampil saat ada urgensi (habis / stok menipis)
 function getStockBadge(product) {
   if (product.stock <= 0) return null; // stok habis sudah ditandai overlay "Stok Habis"
-  if (product.stock <= 5) return { label: "Stok Terbatas", className: "bg-secondary text-neutral-900" };
+  if (product.stock <= 5) return { label: "Stok Terbatas", className: "bg-amber-100 text-amber-800" };
   return null;
 }
 
@@ -39,7 +39,7 @@ export default function ProductCard({ product }) {
   }
 
   return (
-    <div className="group mx-auto flex h-full w-full max-w-[260px] flex-col overflow-hidden rounded-xl border border-neutral-200 bg-surface p-3 shadow-sm transition-shadow hover:shadow-md sm:p-4">
+    <div className="group flex h-full w-full flex-col overflow-hidden rounded-xl border border-neutral-200 bg-surface p-3 shadow-sm transition-shadow hover:shadow-md sm:p-4">
       {/* a. Image wrapper — fixed height 160px */}
       <Link to={`/produk/${product.id}`} className="relative block h-[160px] overflow-hidden rounded-lg bg-neutral-100">
         {product.image_url ? (
@@ -60,7 +60,7 @@ export default function ProductCard({ product }) {
 
         {/* Badge status stok — pojok kiri atas, hanya saat urgensi */}
         {stockBadge && (
-          <span className={`absolute left-2 top-2 rounded-full px-2.5 py-1 font-body text-[11px] font-bold shadow-sm ${stockBadge.className}`}>
+          <span className={`absolute left-2 top-2 rounded-full px-2.5 py-1 font-body text-xs font-bold shadow-sm ${stockBadge.className}`}>
             {stockBadge.label}
           </span>
         )}
