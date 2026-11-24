@@ -7,7 +7,7 @@ export default function ProtectedRoute({ children }) {
 
   if (loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center font-body text-neutral-500">
+      <div className="flex min-h-dvh items-center justify-center font-body text-neutral-500">
         Memuat...
       </div>
     );

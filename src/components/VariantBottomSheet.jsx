@@ -237,7 +237,7 @@ export default function VariantBottomSheet() {
         </div>
 
         {/* ── Body (Varian) ── */}
-        <div className="px-5 sm:px-6 py-2 overflow-y-auto max-h-[60vh] sm:max-h-[50vh] space-y-6">
+        <div className="px-5 sm:px-6 py-2 overflow-y-auto max-h-[60dvh] sm:max-h-[50dvh] space-y-6">
           
           {/* Notifikasi Budget Recommender */}
           {preselectVariantIds.length > 0 && (
@@ -296,7 +296,7 @@ export default function VariantBottomSheet() {
         </div>
 
         {/* ── Footer ── */}
-        <div className="p-5 sm:p-6 pt-4 sm:pt-4 mt-2 sm:mt-2 border-t border-neutral-100 flex flex-row items-center justify-between gap-4 bg-white rounded-b-2xl">
+        <div className="p-5 sm:p-6 pt-4 sm:pt-4 mt-2 sm:mt-2 pb-[max(1.25rem,env(safe-area-inset-bottom))] sm:pb-6 border-t border-neutral-100 flex flex-row items-center justify-between gap-4 bg-white rounded-b-2xl">
           <div>
             <p className="text-xs sm:text-xs font-medium text-neutral-500 mb-0.5">Total</p>
             <p className="text-lg sm:text-xl font-bold font-display text-primary tracking-tight">
@@ -315,7 +315,7 @@ export default function VariantBottomSheet() {
             type="button"
             onClick={handleAdd}
             disabled={!canAdd}
-            className="bg-primary hover:bg-primary-dark text-white font-bold text-sm px-5 sm:px-6 py-2.5 sm:py-3 rounded-xl flex items-center justify-center gap-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed active:scale-95"
+            className="min-h-[44px] bg-primary hover:bg-primary-dark text-white font-bold text-sm px-5 sm:px-6 py-2.5 sm:py-3 rounded-xl flex items-center justify-center gap-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed active:scale-95"
           >
             <span>Tambah</span>
           </button>
@@ -353,7 +353,7 @@ export default function VariantBottomSheet() {
     <Drawer.Root open={isOpen} onOpenChange={(open) => !open && closeModal()} direction="bottom">
       <Drawer.Portal>
         <Drawer.Overlay className="fixed inset-0 z-[100] bg-black/50 backdrop-blur-sm" />
-        <Drawer.Content className="fixed inset-x-0 bottom-0 z-[100] flex max-h-[90vh] flex-col rounded-t-2xl bg-white shadow-xl outline-none">
+        <Drawer.Content className="fixed inset-x-0 bottom-0 z-[100] flex max-h-[90dvh] flex-col rounded-t-2xl bg-white shadow-xl outline-none">
           {/* Handle for Drawer */}
           <Drawer.Title className="sr-only">
             {product ? `Pilih varian ${product.name}` : "Pilih varian"}
