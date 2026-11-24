@@ -93,3 +93,13 @@ button, a, [role="button"], input, select, textarea, label {
     display: none;
   }
 }
+
+/* ── Tema admin lama ────────────────────────────────────────────────────────
+   Palet abu-abu/hijau panel admin sebelum audit UI (kelas "admin-legacy" dipasang
+   di <body> oleh AdminLayout & AdminLogin). Halaman publik memakai palet baru. */
+.admin-legacy .text-neutral-400 { color: #B3A296; }
+.admin-legacy .text-neutral-500 { color: #8A7B72; }
+.admin-legacy .text-neutral-600 { color: #6B5D54; }
+.admin-legacy .hover\:text-neutral-500:hover { color: #8A7B72; }
+.admin-legacy .hover\:text-neutral-600:hover { color: #6B5D54; }
+.admin-legacy .text-success { color: #4B7A57; }
