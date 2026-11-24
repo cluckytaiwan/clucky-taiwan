@@ -47,6 +47,7 @@ export default function ProductCard({ product }) {
             src={getOptimizedImageUrl(product.image_url, { width: 600 })}
             alt={product.name}
             loading="lazy"
+            decoding="async"
             width={600}
             height={600}
             className="absolute inset-0 h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
