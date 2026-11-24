@@ -8,6 +8,7 @@ import { getOptimizedImageUrl } from "../../utils/imageUrl";
 import { ShoppingBag, ArrowLeft, Plus, Minus, CheckCircle2 } from "lucide-react";
 import CartDrawer from "../../components/CartDrawer";
 import toast from "react-hot-toast";
+import { usePageTitle } from "../../hooks/usePageTitle";
 
 export default function ProductDetailPage() {
   const { id } = useParams();
@@ -31,6 +32,7 @@ export default function ProductDetailPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [qty, setQty] = useState(1);
+  usePageTitle(product?.name ?? "Menu");
   const [cartOpen, setCartOpen] = useState(false);
   const [addedFeedback, setAddedFeedback] = useState(false);
 
@@ -387,17 +389,19 @@ export default function ProductDetailPage() {
                   <div className="flex items-center rounded-xl border-2 border-neutral-200 bg-neutral-50 shrink-0">
                     <button
                       type="button"
+                      aria-label="Kurangi jumlah"
                       onClick={() => setQty((q) => Math.max(1, q - 1))}
                       disabled={!canAdd}
                       className="flex h-12 w-12 items-center justify-center text-neutral-600 hover:text-neutral-900 disabled:opacity-50"
                     >
                       <Minus size={18} />
                     </button>
-                    <span className="w-10 text-center font-body text-base font-semibold tabular-nums text-neutral-900">
+                    <span aria-live="polite" aria-label={`Jumlah ${qty}`} className="w-10 text-center font-body text-base font-semibold tabular-nums text-neutral-900">
                       {qty}
                     </span>
                     <button
                       type="button"
+                      aria-label="Tambah jumlah"
                       onClick={() => setQty((q) => Math.min(product.stock, q + 1))}
                       disabled={!canAdd}
                       className="flex h-12 w-12 items-center justify-center text-neutral-600 hover:text-neutral-900 disabled:opacity-50"
