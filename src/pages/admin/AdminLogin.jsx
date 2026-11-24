@@ -1,11 +1,18 @@
 // src/pages/admin/AdminLogin.jsx
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useAdminAuth } from "../../context/AdminAuthContext";
 import { useNavigate } from "react-router-dom";
 import heroImg from "../../assets/hero.jpg";
 
 export default function AdminLogin() {
   const { login } = useAdminAuth();
+  // Tema admin lama (abu-abu & hijau sebelum audit UI). Dipasang di <body> agar toast
+  // dan popup yang dirender di luar layout ikut. Halaman publik tetap memakai palet baru.
+  useEffect(() => {
+    document.body.classList.add("admin-legacy");
+    return () => document.body.classList.remove("admin-legacy");
+  }, []);
+
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");

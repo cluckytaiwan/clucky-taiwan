@@ -274,10 +274,7 @@ export default function AdminDashboard() {
 
 
   /* ─── Transaksi Terbaru (10 terakhir toko secara global) ─── */
-  // Diurutkan berdasarkan waktu bayar (kolom yang ditampilkan), bukan waktu pesanan dibuat
-  const recentOrders = [...allLunas]
-    .sort((a, b) => new Date(b.dibayar_pada ?? b.created_at) - new Date(a.dibayar_pada ?? a.created_at))
-    .slice(0, 10);
+  const recentOrders = allLunas.slice(0, 10);
 
   /* ─── Ekspor Excel ─── */
   async function handleExport() {
@@ -363,7 +360,6 @@ export default function AdminDashboard() {
             onClick={fetchData}
             disabled={loading}
             title="Refresh data"
-            aria-label="Muat ulang data"
             className="p-2 rounded-xl bg-neutral-100 text-neutral-500 hover:bg-neutral-200 transition-colors disabled:opacity-50"
           >
             <RefreshCw size={16} className={loading ? "animate-spin" : ""} />
