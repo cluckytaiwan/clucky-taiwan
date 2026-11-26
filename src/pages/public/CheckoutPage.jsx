@@ -1,7 +1,8 @@
 // src/pages/public/CheckoutPage.jsx
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import CheckoutForm, { getPendingPayment, clearPendingPayment } from "../../components/CheckoutForm";
+import CheckoutForm from "../../components/CheckoutForm";
+import { supabase } from "../../lib/supabaseClient";
 import { CheckCircle2, Clock, CreditCard, X, Copy, Check } from "lucide-react";
 import { formatRupiah } from "../../utils/formatCurrency";
 import { loadSnap } from "../../utils/loadSnap";
@@ -54,9 +55,24 @@ export default function CheckoutPage() {
   const [copied, setCopied] = useState(false);
   const [pendingPayment, setPendingPayment] = useState(null);
 
+  // Pesanan akun yang belum dibayar & link bayarnya masih berlaku (30 menit), dari database
   useEffect(() => {
-    const pending = getPendingPayment();
-    if (pending) setPendingPayment(pending);
+    let active = true;
+    supabase
+      .from("pesanan")
+      .select("kode_pesanan, total_harga, snap_token")
+      .eq("status_pembayaran", "menunggu_pembayaran")
+      .not("snap_token", "is", null)
+      .gte("created_at", new Date(Date.now() - 30 * 60 * 1000).toISOString())
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .then(({ data }) => {
+        const row = data?.[0];
+        if (active && row) {
+          setPendingPayment({ kode: row.kode_pesanan, total: row.total_harga, snapToken: row.snap_token });
+        }
+      });
+    return () => { active = false; };
   }, []);
 
   /* Buka Snap dengan token pending */
@@ -73,7 +89,6 @@ export default function CheckoutPage() {
 
     window.snap.pay(pendingPayment.snapToken, {
       onSuccess: () => {
-        clearPendingPayment();
         setPendingPayment(null);
         setCompleted({ kode: pendingPayment.kode, paid: true });
       },
@@ -91,7 +106,6 @@ export default function CheckoutPage() {
   }
 
   function handleDismiss() {
-    clearPendingPayment();
     setPendingPayment(null);
   }
 
@@ -121,7 +135,7 @@ export default function CheckoutPage() {
           </h1>
           <p className="mt-2 font-body text-sm text-neutral-500">
             {paid
-              ? "Pesananmu sedang kami siapkan. Status pesanan tersimpan otomatis di perangkat ini."
+              ? "Pesananmu sedang kami siapkan. Status pesanan bisa dipantau kapan saja di menu Pesanan Saya."
               : "Selesaikan pembayaran QRIS-mu. Status akan berubah otomatis setelah pembayaran diterima."}
           </p>
           <div className="mt-4 flex items-center justify-center gap-2 rounded-lg bg-neutral-200/50 p-3">

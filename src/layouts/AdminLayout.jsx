@@ -2,9 +2,9 @@ import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import {
   LayoutDashboard, Package, Tags, LogOut,
-  Bell, BellOff, ShoppingBag,
+  Bell, BellOff, ShoppingBag, ClipboardList, Users,
 } from "lucide-react";
-import { useAdminAuth } from "../context/AdminAuthContext";
+import { useAuth } from "../context/AuthContext";
 import { useOrderNotification } from "../context/OrderNotificationContext";
 import { supabase } from "../lib/supabaseClient";
 import { useOrdersStore } from "../store/ordersStore";
@@ -13,7 +13,8 @@ export default function AdminLayout() {
   const location  = useLocation();
   const navigate  = useNavigate();
   const currentPath = location.pathname;
-  const { logout } = useAdminAuth();
+  const { signOut, role, nama } = useAuth();
+  const isOwner = role === "owner";
   // Tema admin lama (abu-abu & hijau sebelum audit UI). Dipasang di <body> agar toast
   // dan popup yang dirender di luar layout ikut. Halaman publik tetap memakai palet baru.
   useEffect(() => {
@@ -27,6 +28,7 @@ export default function AdminLayout() {
   const [lowStockCount, setLowStockCount] = useState(0);
 
   useEffect(() => {
+    if (isOwner) return; // badge stok hanya untuk Admin (yang mengelola produk)
     async function fetchLowStock() {
       const { count } = await supabase
         .from("produk")
@@ -36,7 +38,7 @@ export default function AdminLayout() {
       setLowStockCount(count || 0);
     }
     fetchLowStock();
-  }, []);
+  }, [isOwner]);
 
   // ── Realtime channel bersama ──────────────────────────────────
   // Setup satu channel untuk seluruh area admin (Sales + Dashboard).
@@ -53,7 +55,7 @@ export default function AdminLayout() {
 
 
   async function handleLogout() {
-    await logout();
+    await signOut();
     navigate("/admin/login");
   }
 
@@ -82,9 +84,9 @@ export default function AdminLayout() {
         {/* Logo + Mute */}
         <div className="p-4 border-b border-neutral-200 flex items-center justify-between">
           <span className="font-display text-xl font-extrabold tracking-tight text-primary">
-            Clucky<span className="text-secondary">Admin</span>
+            Clucky<span className="text-secondary">{isOwner ? "Owner" : "Admin"}</span>
           </span>
-          <button
+          {!isOwner && <button
             onClick={toggleMute}
             title={isMuted ? "Aktifkan notifikasi suara" : "Matikan notifikasi suara"}
             className={`
@@ -99,41 +101,55 @@ export default function AdminLayout() {
             <span className="absolute right-full mr-2 top-1/2 -translate-y-1/2 bg-neutral-800 text-white text-[11px] font-medium px-2 py-1 rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
               {isMuted ? "Suara nonaktif" : "Suara aktif"}
             </span>
-          </button>
+          </button>}
+        </div>
+
+        {/* Akun yang sedang login */}
+        <div className="px-4 py-3 border-b border-neutral-200">
+          <p className="text-[10px] font-bold uppercase tracking-widest text-neutral-400">
+            {isOwner ? "Login sebagai Owner" : "Login sebagai Admin"}
+          </p>
+          <p className="mt-0.5 truncate text-sm font-semibold text-neutral-800">{nama}</p>
         </div>
 
         {/* Nav */}
         <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
-          {/* Dasbor */}
-          <NavLink to="/admin/dashboard" icon={LayoutDashboard} label="Dasbor" />
+          {isOwner ? (
+            <>
+              {/* Owner: laporan, penjualan (hanya baca), akun admin */}
+              <NavLink to="/admin/dashboard" icon={LayoutDashboard} label="Dasbor Laporan" />
+              <NavLink to="/admin/sales" icon={ShoppingBag} label="Penjualan" />
+              <NavLink to="/admin/akun" icon={Users} label="Akun Admin" />
+            </>
+          ) : (
+            <>
+              {/* Admin: operasional */}
+              <NavLink to="/admin/pesanan" icon={ClipboardList} label="Pesanan Hari Ini" />
+              <NavLink to="/admin/categories" icon={Tags} label="Kategori" />
 
-          {/* Penjualan */}
-          <NavLink to="/admin/sales" icon={ShoppingBag} label="Penjualan" />
-
-          {/* Kategori */}
-          <NavLink to="/admin/categories" icon={Tags} label="Kategori" />
-
-          {/* Produk — badge stok rendah langsung di nav item */}
-          <Link
-            to="/admin/products"
-            className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-colors font-medium text-sm ${
-              currentPath === "/admin/products"
-                ? "bg-primary text-white shadow-sm"
-                : "text-neutral-600 hover:bg-primary/10 hover:text-primary"
-            }`}
-          >
-            <Package size={18} />
-            <span className="flex-1">Produk</span>
-            {lowStockCount > 0 && (
-              <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${
-                currentPath === "/admin/products"
-                  ? "bg-white/20 text-white"
-                  : "bg-amber-100 text-amber-700"
-              }`}>
-                {lowStockCount}
-              </span>
-            )}
-          </Link>
+              {/* Produk — badge stok rendah langsung di nav item */}
+              <Link
+                to="/admin/products"
+                className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-colors font-medium text-sm ${
+                  currentPath === "/admin/products"
+                    ? "bg-primary text-white shadow-sm"
+                    : "text-neutral-600 hover:bg-primary/10 hover:text-primary"
+                }`}
+              >
+                <Package size={18} />
+                <span className="flex-1">Produk</span>
+                {lowStockCount > 0 && (
+                  <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${
+                    currentPath === "/admin/products"
+                      ? "bg-white/20 text-white"
+                      : "bg-amber-100 text-amber-700"
+                  }`}>
+                    {lowStockCount}
+                  </span>
+                )}
+              </Link>
+            </>
+          )}
         </nav>
 
         {/* Logout */}

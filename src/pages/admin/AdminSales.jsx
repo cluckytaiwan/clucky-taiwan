@@ -1,10 +1,10 @@
 // src/pages/admin/AdminSales.jsx
-// Halaman Penjualan/Pemesanan — menggunakan shared ordersStore
+// Halaman Penjualan/Pemesanan (khusus Owner, HANYA BACA) — menggunakan shared ordersStore
 // Orders state & realtime dikelola oleh store; halaman ini hanya UI + filter lokal.
 import { useEffect, useState } from "react";
 import { ChevronDown, ChevronUp, Loader2, Search, X } from "lucide-react";
 import { formatRupiah } from "../../utils/formatCurrency";
-import FulfillmentDropdown from "../../components/admin/FulfillmentDropdown";
+import { fulfillmentLabel } from "../../constants/orderStatus";
 import OrderDetailModal from "../../components/admin/OrderDetailModal";
 import { useOrdersStore, PAGE_SIZE } from "../../store/ordersStore";
 
@@ -46,14 +46,12 @@ export default function AdminSales() {
   const page         = useOrdersStore(s => s.page);
   const salesLoading = useOrdersStore(s => s.salesLoading);
   const fetchSales   = useOrdersStore(s => s.fetchSales);
-  const storeUpdateFulfillment = useOrdersStore(s => s.updateFulfillment);
 
   // ── UI state lokal (bukan state orders) ──
   const [filterStatus,   setFilterStatus]   = useState("all");
   const [searchQuery,    setSearchQuery]     = useState("");
   const [selectedOrder,  setSelectedOrder]  = useState(null);
   const [sortAsc,        setSortAsc]        = useState(false);
-  const [loadingId,      setLoadingId]      = useState(null);
 
   // Fetch halaman pertama saat komponen mount
   useEffect(() => {
@@ -73,14 +71,6 @@ export default function AdminSales() {
     fetchSales(newPage);
   }
 
-  /* ─── Fulfillment update ─── */
-  async function updateFulfillment(orderId, newStatus) {
-    setLoadingId(orderId);
-    await storeUpdateFulfillment(orderId, newStatus);
-    // selectedOrder sudah di-update via useEffect di atas (sync dari orders)
-    setLoadingId(null);
-  }
-
   /* ─── Filter & Search (client-side pada halaman aktif) ─── */
   const filtered = orders
     .filter(o => filterStatus === "all" || o.status_pembayaran === filterStatus)
@@ -89,7 +79,6 @@ export default function AdminSales() {
       const q = searchQuery.toLowerCase();
       return (
         o.nama_pelanggan?.toLowerCase().includes(q) ||
-        o.no_hp_pelanggan?.includes(q) ||
         (o.kode_pesanan && o.kode_pesanan.toLowerCase().includes(q)) ||
         String(o.id).toLowerCase().includes(q)
       );
@@ -113,7 +102,7 @@ export default function AdminSales() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold font-display text-neutral-900">Penjualan & Pesanan</h1>
-          <p className="text-sm text-neutral-400 mt-0.5">Kelola dan pantau semua transaksi masuk</p>
+          <p className="text-sm text-neutral-400 mt-0.5">Pantau semua transaksi (hanya baca — pesanan diproses oleh Admin)</p>
         </div>
         <span className="flex items-center gap-1.5 text-xs font-medium text-green-600 bg-green-50 border border-green-200 px-3 py-1.5 rounded-full">
           <span className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse" />
@@ -138,7 +127,7 @@ export default function AdminSales() {
             type="text"
             value={searchQuery}
             onChange={e => setSearchQuery(e.target.value)}
-            placeholder="Cari nama, kode, atau no. HP…"
+            placeholder="Cari nama atau kode pesanan…"
             className="w-full pl-9 pr-8 py-2.5 bg-surface border border-neutral-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/60 transition-all"
           />
           {searchQuery && (
@@ -237,7 +226,6 @@ export default function AdminSales() {
                       {/* Pelanggan */}
                       <td className="px-5 py-3.5 whitespace-nowrap">
                         <p className="font-semibold text-neutral-800 text-sm">{order.nama_pelanggan}</p>
-                        <p className="text-neutral-400 text-xs mt-0.5">{order.no_hp_pelanggan}</p>
                       </td>
 
                       {/* Item */}
@@ -275,11 +263,9 @@ export default function AdminSales() {
                       {/* Status Kirim */}
                       <td className="px-5 py-3.5" onClick={e => e.stopPropagation()}>
                         {isLunas ? (
-                          <FulfillmentDropdown
-                            order={order}
-                            onUpdate={updateFulfillment}
-                            loadingId={loadingId}
-                          />
+                          <span className="text-sm font-medium text-neutral-800">
+                            {fulfillmentLabel[order.status_pesanan] ?? order.status_pesanan}
+                          </span>
                         ) : (
                           <span className="text-xs text-neutral-300 italic">—</span>
                         )}
@@ -324,8 +310,7 @@ export default function AdminSales() {
         <OrderDetailModal
           order={selectedOrder}
           onClose={() => setSelectedOrder(null)}
-          onUpdate={updateFulfillment}
-          loadingId={loadingId}
+          readOnly
         />
       )}
     </div>

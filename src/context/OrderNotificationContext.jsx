@@ -49,7 +49,11 @@ function playNotifSound() {
   }
 }
 
-export function OrderNotificationProvider({ children }) {
+/**
+ * enabled=false untuk Owner: pemilik hanya memantau, tidak memproses pesanan,
+ * jadi tidak menerima notifikasi pesanan baru (khusus Admin).
+ */
+export function OrderNotificationProvider({ children, enabled = true }) {
   const [isMuted, setIsMuted] = useState(
     () => localStorage.getItem(MUTE_KEY) === "true"
   );
@@ -66,6 +70,7 @@ export function OrderNotificationProvider({ children }) {
   // 1. Inisialisasi: daftarkan semua order yang SUDAH lunas di database ke handledOrderIds
   // agar order yang sudah ada sebelum sesi ini TIDAK PERNAH memicu notifikasi saat statusnya diubah.
   useEffect(() => {
+    if (!enabled) return;
     supabase
       .from("pesanan")
       .select("id")
@@ -75,10 +80,11 @@ export function OrderNotificationProvider({ children }) {
           data.forEach((o) => handledOrderIds.add(o.id));
         }
       });
-  }, []);
+  }, [enabled]);
 
   // 2. Realtime listener: hanya picu notifikasi SEKALI untuk pesanan yang BARU saja lunas
   useEffect(() => {
+    if (!enabled) return;
     const channel = supabase
       .channel("global-order-notif")
       .on(
@@ -137,7 +143,7 @@ export function OrderNotificationProvider({ children }) {
       supabase.removeChannel(channel);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [enabled]);
 
   // Keep a ref to isMuted so the realtime callback always sees the latest value
   const isMutedRef = useRef(isMuted);

@@ -14,8 +14,6 @@ interface CartItem {
 
 interface CheckoutPayload {
   customer_name: string;
-  customer_phone: string;
-  customer_address?: string;
   customer_notes?: string;
   items: CartItem[];
 }
@@ -28,9 +26,9 @@ interface VariantRow {
   harga_tambahan: number;
 }
 
-// Maks. 3 pesanan belum dibayar per nomor HP dalam 45 menit, agar stok tidak
+// Maks. 3 pesanan belum dibayar per akun dalam 45 menit, agar stok tidak
 // tertahan oleh pesanan berulang yang tidak pernah dibayar.
-const MAX_PENDING_PER_PHONE = 3;
+const MAX_PENDING_PER_USER = 3;
 const PENDING_WINDOW_MINUTES = 45;
 // Link bayar Midtrans berlaku 30 menit; pesanan baru dibatalkan otomatis setelah
 // 45 menit, jadi pesanan tidak batal selagi pembeli masih bisa membayar.
@@ -56,7 +54,8 @@ function errorResponse(code: string, message: string, status: number) {
 
 /**
  * Membuat pesanan baru dan meminta token pembayaran ke Midtrans.
- * Dipanggil oleh halaman checkout saat pelanggan menekan tombol bayar.
+ * Dipanggil oleh halaman checkout saat pelanggan (sudah login) menekan tombol bayar.
+ * Wajib membawa token login (JWT) pelanggan di header Authorization.
  * Hasil: pesanan tersimpan berstatus "menunggu_pembayaran", stok direservasi,
  * dan snap_token dikirim ke browser untuk membuka popup pembayaran.
  */
@@ -73,33 +72,34 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
     );
 
+    // ── 0. Wajib login ──────────────────────────────────────────────────────
+    // Pelanggan harus punya akun. Identitas diambil dari token login (JWT) yang
+    // diverifikasi Supabase Auth, bukan dari isi permintaan, sehingga tidak bisa dipalsukan.
+    const bearer = (req.headers.get("Authorization") ?? "").replace(/^Bearer\s+/i, "");
+    const { data: userData, error: userError } = bearer
+      ? await supabase.auth.getUser(bearer)
+      : { data: null, error: new Error("no token") };
+    if (userError || !userData?.user) {
+      return errorResponse("UNAUTHORIZED", "Silakan login terlebih dahulu untuk memesan", 401);
+    }
+    const user = userData.user;
+
     const payload: CheckoutPayload = await req.json();
 
     // ── 1. Validasi isi permintaan ──────────────────────────────────────────
     // Browser bisa dimanipulasi, jadi semua input dicek ulang di server.
     if (
       !payload.customer_name?.trim() ||
-      !payload.customer_phone?.trim() ||
       !Array.isArray(payload.items) ||
       payload.items.length === 0
     ) {
       return errorResponse("VALIDATION_ERROR", "Data checkout tidak lengkap", 400);
     }
 
-    const phoneRegex = /^(\+62|62|0)8[1-9][0-9]{6,10}$/;
-    if (!phoneRegex.test(payload.customer_phone.trim())) {
-      return errorResponse(
-        "VALIDATION_ERROR",
-        "customer_phone wajib diisi dengan format 08xxxxxxxxxx",
-        400,
-      );
-    }
-
     const name = payload.customer_name.trim();
     const notes = payload.customer_notes?.trim() ?? "";
-    const address = payload.customer_address?.trim() ?? "";
-    if (name.length > 60 || notes.length > 255 || address.length > 200) {
-      return errorResponse("VALIDATION_ERROR", "Nama, catatan, atau alamat terlalu panjang", 400);
+    if (name.length < 3 || name.length > 60 || notes.length > 255) {
+      return errorResponse("VALIDATION_ERROR", "Nama minimal 3 karakter; nama atau catatan terlalu panjang", 400);
     }
     if (payload.items.length > 20) {
       return errorResponse("VALIDATION_ERROR", "Terlalu banyak item dalam satu pesanan", 400);
@@ -235,16 +235,16 @@ Deno.serve(async (req) => {
       return errorResponse("VALIDATION_ERROR", "Total pesanan tidak valid", 400);
     }
 
-    // ── 5. Batasi pesanan belum dibayar per nomor HP ────────────────────────
+    // ── 5. Batasi pesanan belum dibayar per akun ────────────────────────────
     const since = new Date(Date.now() - PENDING_WINDOW_MINUTES * 60 * 1000).toISOString();
     const { count: pendingCount, error: pendingError } = await supabase
       .from("pesanan")
       .select("id", { count: "exact", head: true })
-      .eq("no_hp_pelanggan", payload.customer_phone.trim())
+      .eq("user_id", user.id)
       .eq("status_pembayaran", "menunggu_pembayaran")
       .gte("created_at", since);
     if (pendingError) throw pendingError;
-    if ((pendingCount ?? 0) >= MAX_PENDING_PER_PHONE) {
+    if ((pendingCount ?? 0) >= MAX_PENDING_PER_USER) {
       return errorResponse(
         "TOO_MANY_PENDING",
         "Masih ada beberapa pesanan yang belum dibayar. Selesaikan pembayaran di menu Pesanan Saya, atau tunggu beberapa saat.",
@@ -297,9 +297,8 @@ Deno.serve(async (req) => {
       const res = await supabase
         .from("pesanan")
         .insert({
+          user_id: user.id,
           nama_pelanggan: name,
-          no_hp_pelanggan: payload.customer_phone.trim(),
-          alamat_pelanggan: address || "-",
           catatan: notes || null,
           total_harga: totalAmount,
           status_pembayaran: "menunggu_pembayaran",
@@ -345,7 +344,9 @@ Deno.serve(async (req) => {
       ? Deno.env.get("MIDTRANS_SNAP_URL_PRODUCTION")!
       : Deno.env.get("MIDTRANS_SNAP_URL_SANDBOX")!;
 
-    const snapResponse = await fetch(midtransBaseUrl, {
+    let snapResponse: Response;
+    try {
+      snapResponse = await fetch(midtransBaseUrl, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -359,7 +360,7 @@ Deno.serve(async (req) => {
         expiry: { unit: "minutes", duration: SNAP_EXPIRY_MINUTES },
         customer_details: {
           first_name: name,
-          phone: payload.customer_phone.trim(),
+          email: user.email,
         },
         item_details: orderItems.map((i) => ({
           id: i.product_id,
@@ -369,7 +370,14 @@ Deno.serve(async (req) => {
         })),
         enabled_payments: ["other_qris"],
       }),
-    });
+      });
+    } catch (fetchErr) {
+      // Midtrans tidak terjangkau (jaringan/timeout): batalkan pesanan dan kembalikan stok
+      console.error("Midtrans tidak terjangkau:", fetchErr);
+      await supabase.from("pesanan").delete().eq("id", order.id);
+      await rollbackStock(supabase, decrementedItems);
+      return errorResponse("PAYMENT_GATEWAY_ERROR", "Gagal menghubungi Midtrans, coba lagi", 502);
+    }
 
     // Midtrans gagal: batalkan pesanan dan kembalikan stok, supaya tidak ada pesanan tanpa link bayar
     if (!snapResponse.ok) {
