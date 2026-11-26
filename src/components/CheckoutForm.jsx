@@ -1,42 +1,13 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useCartStore } from "../store/cartStore";
+import { useAuth } from "../context/AuthContext";
 import { formatRupiah } from "../utils/formatCurrency";
-import { isValidPhoneNumber } from "../utils/validators";
-import { User, Phone, QrCode, Clock, CreditCard, ShoppingBag } from "lucide-react";
+import { User, QrCode, Clock, CreditCard, ShoppingBag } from "lucide-react";
 import { supabase } from "../lib/supabaseClient";
 import { loadSnap } from "../utils/loadSnap";
 import { pollOrderStatus } from "../utils/orderStatusApi";
-import { saveCustomerProfile, getCustomerProfile, saveOrderToHistory } from "../utils/storage";
 
-const PENDING_KEY = "clucky_pending_payment";
-const LAST_ORDER_KEY = "clucky_last_order";
-
-const initialForm = { customer_name: "", customer_phone: "", customer_notes: "" };
-
-/* ─── Helper localStorage ───────────────────────────────────── */
-// Menyimpan pesanan yang belum dibayar di perangkat pelanggan (tanpa akun),
-// agar tombol "Bayar Sekarang" bisa dibuka lagi setelah popup Midtrans ditutup.
-export function savePendingPayment({ snapToken, kode, hp, orderId, total }) {
-  localStorage.setItem(PENDING_KEY, JSON.stringify({ snapToken, kode, hp, orderId, total, savedAt: Date.now() }));
-}
-export function getPendingPayment() {
-  try {
-    const raw = localStorage.getItem(PENDING_KEY);
-    if (!raw) return null;
-    const data = JSON.parse(raw);
-    // Data lokal dibuang setelah 23 jam (link bayar Midtrans sendiri berlaku 30 menit)
-    if (Date.now() - data.savedAt > 23 * 60 * 60 * 1000) {
-      localStorage.removeItem(PENDING_KEY);
-      return null;
-    }
-    return data;
-  } catch {
-    return null;
-  }
-}
-export function clearPendingPayment() {
-  localStorage.removeItem(PENDING_KEY);
-}
+const initialForm = { customer_name: "", customer_notes: "" };
 
 /* ─── Modal: Snap Ditutup ───────────────────────────────────── */
 function SnapClosedModal({ kode, total, onPayNow, onPayLater }) {
@@ -96,14 +67,16 @@ function SnapClosedModal({ kode, total, onPayNow, onPayLater }) {
 /* ─── Main Component ────────────────────────────────────────── */
 export default function CheckoutForm({ onBack, onSuccess, onPayLater }) {
   const { items, getTotal, clearCart } = useCartStore();
-  const [form, setForm] = useState(() => {
-    const saved = getCustomerProfile();
-    return saved || initialForm;
-  });
+  const { nama, session } = useAuth();
+  // Nama terisi otomatis dari akun pelanggan dan boleh diubah
+  const [form, setForm] = useState({ ...initialForm, customer_name: nama || "" });
+  useEffect(() => {
+    if (nama) setForm((f) => (f.customer_name ? f : { ...f, customer_name: nama }));
+  }, [nama]);
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
   const [serverError, setServerError] = useState("");
-  const [pendingModal, setPendingModal] = useState(null); // { snapToken, kode, orderId, phone, total }
+  const [pendingModal, setPendingModal] = useState(null); // { snapToken, kode, orderId, total }
   // true sejak pesanan dibuat — keranjang sudah dikosongkan, jadi jangan tampilkan empty state
   const [orderInProgress, setOrderInProgress] = useState(false);
 
@@ -112,15 +85,12 @@ export default function CheckoutForm({ onBack, onSuccess, onPayLater }) {
     if (!form.customer_name.trim() || form.customer_name.trim().length < 3) {
       e.customer_name = "Nama minimal 3 karakter";
     }
-    if (!isValidPhoneNumber(form.customer_phone)) {
-      e.customer_phone = "Format nomor HP tidak valid (contoh: 081234567890)";
-    }
     setErrors(e);
     return Object.keys(e).length === 0;
   }
 
   /* Buka Snap dengan token yang diberikan */
-  async function openSnap({ snapToken, kode, orderId, phone, total }) {
+  async function openSnap({ snapToken, kode, orderId, total }) {
     try {
       await loadSnap();
     } catch (err) {
@@ -129,7 +99,7 @@ export default function CheckoutForm({ onBack, onSuccess, onPayLater }) {
       return;
     }
 
-    // Pantau pembayaran via Edge Function (kode + no HP), bukan Realtime anon.
+    // Pantau pembayaran lewat Edge Function check-order-status (butuh login pelanggan).
     let finished = false;
     // paid=true: pembayaran terkonfirmasi; paid=false: Midtrans melaporkan pending
     // (mis. QRIS sudah dibuat tapi belum dibayar) — jangan ditampilkan sebagai sukses.
@@ -137,15 +107,10 @@ export default function CheckoutForm({ onBack, onSuccess, onPayLater }) {
       if (finished) return;
       finished = true;
       stopPolling();
-      localStorage.setItem(LAST_ORDER_KEY, JSON.stringify({ kode, hp: phone }));
-      saveCustomerProfile(form);
-      if (paid) clearPendingPayment();
-      else savePendingPayment({ snapToken, kode, hp: phone, orderId, total });
-      clearCart();
       onSuccess(kode, { paid });
     }
 
-    const stopPolling = pollOrderStatus(kode, phone, (order) => {
+    const stopPolling = pollOrderStatus(kode, (order) => {
       if (order.status === "lunas") {
         if (window.snap && typeof window.snap.hide === "function") window.snap.hide();
         finish(true);
@@ -165,9 +130,8 @@ export default function CheckoutForm({ onBack, onSuccess, onPayLater }) {
       },
       onClose: () => {
         stopPolling();
-        // Simpan ke localStorage dan tampilkan modal
-        savePendingPayment({ snapToken, kode, hp: phone, orderId, total });
-        setPendingModal({ snapToken, kode, orderId, phone, total });
+        // Pesanan tersimpan di database (menunggu pembayaran); tawarkan bayar sekarang / nanti
+        setPendingModal({ snapToken, kode, orderId, total });
       },
     });
   }
@@ -231,12 +195,12 @@ export default function CheckoutForm({ onBack, onSuccess, onPayLater }) {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+            apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+            // Token login pelanggan: server mengenali pemilik pesanan dari sini
+            Authorization: `Bearer ${session?.access_token}`,
           },
           body: JSON.stringify({
             customer_name: form.customer_name.trim(),
-            customer_phone: form.customer_phone.trim(),
-            customer_address: "-",
             customer_notes: form.customer_notes?.trim() || "",
             items: items.map((item) => ({
               product_id: item.product_id,
@@ -255,14 +219,8 @@ export default function CheckoutForm({ onBack, onSuccess, onPayLater }) {
         return;
       }
 
-      // 3. Pesanan sudah tersimpan: catat ke riwayat perangkat SEKARANG (bukan
-      //    menunggu bayar), supaya pesanan "Bayar Nanti" tetap muncul di Pesanan Saya.
-      saveOrderToHistory({
-        kode: data.kode_pesanan,
-        hp: form.customer_phone.trim(),
-        total: data.total_amount,
-        date: new Date().toISOString(),
-      });
+      // 3. Pesanan sudah tersimpan di database (otomatis muncul di Pesanan Saya,
+      //    juga bila dibayar nanti). Keranjang dikosongkan.
       setOrderInProgress(true);
       clearCart();
 
@@ -271,7 +229,6 @@ export default function CheckoutForm({ onBack, onSuccess, onPayLater }) {
         snapToken: data.snap_token,
         kode: data.kode_pesanan,
         orderId: data.order_id,
-        phone: form.customer_phone.trim(),
         total: data.total_amount,
       });
     } catch (err) {
@@ -292,7 +249,7 @@ export default function CheckoutForm({ onBack, onSuccess, onPayLater }) {
   /* Handler modal: Bayar Nanti */
   function handlePayLater() {
     setPendingModal(null);
-    // Pesanan sudah ada di riwayat — arahkan ke Pesanan Saya agar bisa dibayar nanti
+    // Pesanan sudah tersimpan di akun — arahkan ke Pesanan Saya agar bisa dibayar nanti
     if (onPayLater) onPayLater();
   }
 
@@ -337,7 +294,7 @@ export default function CheckoutForm({ onBack, onSuccess, onPayLater }) {
           <div className="flex-1 space-y-6">
             <div>
               <h2 className="text-2xl font-bold font-display text-neutral-900 mb-1">Data Pelanggan</h2>
-              <p className="text-sm text-neutral-500 font-body">Isi data diri Anda</p>
+              <p className="text-sm text-neutral-500 font-body">Nama pesanan diambil dari akunmu dan bisa diubah.</p>
             </div>
 
             <div className="space-y-5">
@@ -355,22 +312,6 @@ export default function CheckoutForm({ onBack, onSuccess, onPayLater }) {
                   placeholder="Contoh: Budi Santoso"
                 />
                 {errors.customer_name && <p className="text-xs text-danger mt-1.5">{errors.customer_name}</p>}
-              </div>
-
-              {/* Nomor HP */}
-              <div>
-                <label className="flex items-center gap-2 text-sm font-semibold text-neutral-800 mb-2">
-                  <Phone size={16} className="text-neutral-500" />
-                  Nomor HP
-                </label>
-                <input
-                  type="tel"
-                  value={form.customer_phone}
-                  onChange={(e) => setForm({ ...form, customer_phone: e.target.value })}
-                  className="w-full border border-neutral-200 rounded-xl px-4 py-3 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors text-sm"
-                  placeholder="08xxxxxxxxxx"
-                />
-                {errors.customer_phone && <p className="text-xs text-danger mt-1.5">{errors.customer_phone}</p>}
               </div>
 
               {/* Catatan (Opsional) */}

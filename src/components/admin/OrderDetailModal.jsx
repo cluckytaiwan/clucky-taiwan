@@ -2,6 +2,7 @@
 import { X } from "lucide-react";
 import { formatRupiah } from "../../utils/formatCurrency";
 import FulfillmentDropdown from "./FulfillmentDropdown";
+import { fulfillmentLabel } from "../../constants/orderStatus";
 
 const PAYMENT_STATUS = {
   menunggu_pembayaran: { label: "Menunggu",    badge: "bg-amber-100 text-amber-700 border-amber-200" },
@@ -22,7 +23,11 @@ function formatCode(id) {
   return `#${String(id).padStart(4, "0")}`;
 }
 
-export default function OrderDetailModal({ order, onClose, onUpdate, loadingId }) {
+/**
+ * readOnly=true dipakai Owner: status hanya ditampilkan, tidak bisa diubah
+ * (Owner tidak memproses pesanan).
+ */
+export default function OrderDetailModal({ order, onClose, onUpdate, loadingId, readOnly = false }) {
   if (!order) return null;
   const kode    = order.kode_pesanan ? `#${order.kode_pesanan}` : formatCode(order.id);
   const ps      = PAYMENT_STATUS[order.status_pembayaran] || {};
@@ -64,7 +69,7 @@ export default function OrderDetailModal({ order, onClose, onUpdate, loadingId }
           <div>
             <p className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest mb-2">Pelanggan</p>
             <p className="font-semibold text-neutral-900">{order.nama_pelanggan}</p>
-            <p className="text-sm text-neutral-500">{order.no_hp_pelanggan}</p>
+            {order.no_hp_pelanggan && <p className="text-sm text-neutral-500">{order.no_hp_pelanggan}</p>}
             {order.alamat_pelanggan && order.alamat_pelanggan !== "-" && (
               <p className="text-sm text-neutral-500 mt-0.5 flex gap-1.5">
                 <span>📍</span><span>{order.alamat_pelanggan}</span>
@@ -118,7 +123,11 @@ export default function OrderDetailModal({ order, onClose, onUpdate, loadingId }
           {isLunas && (
             <div>
               <p className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest mb-2">Status Pengiriman</p>
-              <FulfillmentDropdown order={order} onUpdate={onUpdate} loadingId={loadingId} />
+              {readOnly ? (
+                <p className="text-sm font-semibold text-neutral-800">{fulfillmentLabel[order.status_pesanan] ?? order.status_pesanan}</p>
+              ) : (
+                <FulfillmentDropdown order={order} onUpdate={onUpdate} loadingId={loadingId} />
+              )}
             </div>
           )}
         </div>

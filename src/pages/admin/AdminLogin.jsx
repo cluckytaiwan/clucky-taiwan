@@ -1,11 +1,11 @@
 // src/pages/admin/AdminLogin.jsx
 import { useEffect, useState } from "react";
-import { useAdminAuth } from "../../context/AdminAuthContext";
+import { useAuth } from "../../context/AuthContext";
 import { useNavigate } from "react-router-dom";
 import heroImg from "../../assets/hero.jpg";
 
 export default function AdminLogin() {
-  const { login } = useAdminAuth();
+  const { session, role, signIn, signOut } = useAuth();
   // Tema admin lama (abu-abu & hijau sebelum audit UI). Dipasang di <body> agar toast
   // dan popup yang dirender di luar layout ikut. Halaman publik tetap memakai palet baru.
   useEffect(() => {
@@ -23,14 +23,22 @@ export default function AdminLogin() {
     e.preventDefault();
     setLoading(true);
     setError("");
-    const err = await login(email, password);
+    const err = await signIn(email, password);
     setLoading(false);
-    if (err) {
-      setError("Email atau password salah");
-    } else {
-      navigate("/admin/dashboard");
-    }
+    if (err) setError("Email atau password salah");
+    // Pengalihan sesuai peran dilakukan oleh effect di bawah setelah peran terbaca
   }
+
+  // Admin → Pesanan Hari Ini, Owner → Dasbor Laporan; akun pelanggan ditolak
+  useEffect(() => {
+    if (!session || !role) return;
+    if (role === "admin") navigate("/admin/pesanan", { replace: true });
+    else if (role === "owner") navigate("/admin/dashboard", { replace: true });
+    else {
+      setError("Akun ini bukan akun pengelola.");
+      signOut();
+    }
+  }, [session, role, navigate, signOut]);
 
   return (
     <div className="min-h-screen flex items-center justify-center px-4 relative overflow-hidden">
@@ -46,7 +54,7 @@ export default function AdminLogin() {
         onSubmit={handleSubmit}
         className="bg-surface rounded-2xl shadow-sm border border-neutral-200 p-6 w-full max-w-sm space-y-4 relative z-10"
       >
-        <h1 className="text-xl font-bold font-display text-neutral-900 text-center">Admin Clucky Taiwan</h1>
+        <h1 className="text-xl font-bold font-display text-neutral-900 text-center">Login Pengelola</h1>
         <div>
           <label className="text-sm font-medium text-neutral-900">Email</label>
           <input

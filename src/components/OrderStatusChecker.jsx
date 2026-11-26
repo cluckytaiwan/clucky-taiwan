@@ -3,9 +3,9 @@ import { useState, useEffect, useCallback } from "react";
 import { statusLabel, fulfillmentLabel } from "../constants/orderStatus";
 import { formatRupiah } from "../utils/formatCurrency";
 import { CreditCard, Loader2, ChefHat, ShoppingBag, CheckCircle2, AlertCircle, XCircle, History, ChevronRight, ChevronLeft } from "lucide-react";
-import { clearPendingPayment } from "./CheckoutForm";
 import { loadSnap } from "../utils/loadSnap";
-import { getOrderHistory } from "../utils/storage";
+import { supabase } from "../lib/supabaseClient";
+import { fetchOrderStatus } from "../utils/orderStatusApi";
 import { useOrderRealtime } from "../hooks/useOrderRealtime";
 import { STORE_INFO, whatsappLink } from "../config/storeInfo";
 
@@ -159,70 +159,53 @@ function OrderProgress({ status, fulfillmentStatus, paidAt }) {
 }
 
 export default function OrderStatusChecker() {
-  const [orderId, setOrderId] = useState("");
-  const [phone, setPhone] = useState("");
   const [result, setResult] = useState(null);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [payLoading, setPayLoading] = useState(false);
+  // Riwayat pesanan milik akun (dari database), terbaru di atas
   const [history, setHistory] = useState([]);
+  const [historyLoading, setHistoryLoading] = useState(true);
   // isLive: true saat koneksi Supabase Realtime aktif
   const [isLive, setIsLive] = useState(false);
 
-  // Callback stabil untuk useOrderRealtime — diperbarui otomatis saat data baru masuk
-  const handleRealtimeUpdate = useCallback((updatedOrder) => {
-    setResult(updatedOrder);
+  // Pembaruan dari Realtime / pemeriksaan berkala: gabungkan ke pesanan yang tampil
+  const handleRealtimeUpdate = useCallback((patch) => {
+    setResult((prev) => (prev ? { ...prev, ...patch } : prev));
   }, []);
 
-  // Subscribe ke Supabase Realtime — aktif hanya saat result sudah ditampilkan
+  // Berlangganan perubahan pesanan — aktif hanya saat detail pesanan ditampilkan
   useOrderRealtime(
+    result ? result.id : null,
     result ? result.kode_pesanan : null,
-    result ? phone.trim() : null,
     handleRealtimeUpdate,
     setIsLive
   );
 
-  // Muat riwayat pesanan dari perangkat
-  useEffect(() => {
-    const savedOrders = getOrderHistory();
-    setHistory(savedOrders);
-
-    // Legacy fallback
-    const saved = localStorage.getItem("clucky_last_order");
-    if (saved) {
-      try {
-        const data = JSON.parse(saved);
-        if (data.kode && data.hp) {
-          setOrderId(data.kode);
-          setPhone(data.hp);
-        }
-      } catch { /* ignore */ }
-    }
+  // Muat riwayat pesanan akun dari database (RLS: hanya pesanan milik sendiri)
+  const loadHistory = useCallback(async () => {
+    const { data, error: err } = await supabase
+      .from("pesanan")
+      .select("id, kode_pesanan, total_harga, created_at, status_pembayaran, status_pesanan")
+      .order("created_at", { ascending: false })
+      .limit(30);
+    if (err) setError("Gagal memuat riwayat pesanan, coba lagi.");
+    setHistory(data || []);
+    setHistoryLoading(false);
   }, []);
 
+  useEffect(() => { loadHistory(); }, [loadHistory]);
+
   function handleHistoryClick(order) {
-    setOrderId(order.kode);
-    setPhone(order.hp);
-    performCheck(order.kode, order.hp);
+    performCheck(order.kode_pesanan);
   }
 
-  async function performCheck(kode, noHp) {
+  async function performCheck(kode) {
     setError("");
     setResult(null);
     setLoading(true);
     try {
-      const res = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/check-order-status`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
-          },
-          body: JSON.stringify({ kode_pesanan: kode, customer_phone: noHp }),
-        },
-      );
-      const data = await res.json();
+      const data = await fetchOrderStatus(kode);
       if (!data.success) {
         setError(data.error?.message || "Pesanan tidak ditemukan");
       } else {
@@ -234,6 +217,7 @@ export default function OrderStatusChecker() {
       setLoading(false);
     }
   }
+
   /* Buka Snap dengan token yang ada di result */
   async function handlePayNow() {
     if (!result?.snap_token) return;
@@ -248,16 +232,15 @@ export default function OrderStatusChecker() {
       return;
     }
 
+    const kode = result.kode_pesanan;
     window.snap.pay(result.snap_token, {
       onSuccess: () => {
-        clearPendingPayment();
         setPayLoading(false);
-        performCheck(orderId.trim(), phone.trim());
+        performCheck(kode);
       },
       onPending: () => {
-        clearPendingPayment();
         setPayLoading(false);
-        performCheck(orderId.trim(), phone.trim());
+        performCheck(kode);
       },
       onError: () => {
         setPayLoading(false);
@@ -280,28 +263,39 @@ export default function OrderStatusChecker() {
       {/* Daftar Riwayat Pesanan — ditampilkan langsung (muncul jika belum ada hasil pencarian) */}
       {!result && !loading && (
         <div className="max-w-2xl mx-auto">
-          {history.length > 0 ? (
+          {historyLoading ? (
+            <div className="flex items-center justify-center py-16 text-neutral-400">
+              <Loader2 className="animate-spin" size={22} />
+            </div>
+          ) : history.length > 0 ? (
             <>
               <div className="flex items-center gap-2 mb-4">
                 <History size={20} className="text-neutral-500" />
                 <h3 className="font-display font-bold text-lg text-neutral-900">Riwayat Pesanan Anda</h3>
               </div>
               <div className="space-y-3">
-                {history.map((order, idx) => (
+                {history.map((order) => (
                   <button
                     type="button"
-                    key={idx}
+                    key={order.id}
                     onClick={() => handleHistoryClick(order)}
                     className="w-full text-left bg-white border border-neutral-200 rounded-2xl p-4 flex items-center justify-between cursor-pointer hover:border-primary/50 hover:shadow-sm transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
                   >
                     <div>
-                      <p className="font-mono font-bold text-neutral-900">{order.kode}</p>
+                      <p className="font-mono font-bold text-neutral-900">{order.kode_pesanan}</p>
                       <p className="text-sm text-neutral-500 mt-0.5">
-                        {new Date(order.date).toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute:"2-digit" })}
+                        {new Date(order.created_at).toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute:"2-digit" })}
                       </p>
                     </div>
                     <div className="flex items-center gap-4">
-                      <span className="font-bold text-neutral-900">{formatRupiah(order.total)}</span>
+                      <div className="text-right">
+                        <span className="block font-bold text-neutral-900">{formatRupiah(order.total_harga)}</span>
+                        <span className={`mt-0.5 inline-block rounded-full px-2 py-0.5 text-[10px] font-bold ${statusLabel[order.status_pembayaran]?.color ?? "bg-neutral-100 text-neutral-500"}`}>
+                          {order.status_pembayaran === "lunas"
+                            ? (fulfillmentLabel[order.status_pesanan] ?? "Lunas")
+                            : (statusLabel[order.status_pembayaran]?.text ?? order.status_pembayaran)}
+                        </span>
+                      </div>
                       <ChevronRight size={20} className="text-neutral-400" />
                     </div>
                   </button>

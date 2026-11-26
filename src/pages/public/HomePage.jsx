@@ -1,11 +1,13 @@
 import { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { ShoppingBag } from "lucide-react";
+import { ShoppingBag, LogOut, User } from "lucide-react";
 import ProductCard from "../../components/ProductCard";
 import CartDrawer from "../../components/CartDrawer";
 import BudgetRecommender from "../../components/BudgetRecommender";
 import StoreFooter from "../../components/StoreFooter";
 import { useCartStore } from "../../store/cartStore";
+import { useAuthGateStore } from "../../store/authGateStore";
+import { useAuth } from "../../context/AuthContext";
 import { useProducts } from "../../hooks/useProducts";
 import heroImage from "../../assets/hero.jpg";
 
@@ -14,6 +16,8 @@ export default function HomePage() {
   const [cartOpen, setCartOpen] = useState(false);
   const itemCount = useCartStore((s) => s.getItemCount());
   const navigate = useNavigate();
+  const { session, role, nama, signOut } = useAuth();
+  const openGate = useAuthGateStore((s) => s.openGate);
   const { products, loading, error } = useProducts();
   const [activeCategory, setActiveCategory] = useState("Semua");
 
@@ -47,14 +51,42 @@ export default function HomePage() {
           </span>
 
           <div className="flex items-center gap-4 sm:gap-6">
+            {role === "admin" || role === "owner" ? (
+              <button
+                onClick={() => navigate("/admin")}
+                className="font-body text-sm font-semibold text-neutral-600 hover:text-primary transition-colors"
+              >
+                Panel Pengelola
+              </button>
+            ) : (
+              <button
+                onClick={() => navigate("/cek-pesanan")}
+                className="font-body text-sm font-semibold text-neutral-600 hover:text-primary transition-colors"
+              >
+                Pesanan Saya
+              </button>
+            )}
+            {session ? (
+              <button
+                onClick={() => signOut()}
+                title="Keluar"
+                className="flex items-center gap-1.5 font-body text-sm font-semibold text-neutral-600 hover:text-primary transition-colors"
+              >
+                <User size={16} className="hidden sm:block" />
+                <span className="hidden max-w-[110px] truncate sm:inline">{nama.split(" ")[0]}</span>
+                <LogOut size={16} />
+                <span className="sr-only">Keluar</span>
+              </button>
+            ) : (
+              <button
+                onClick={() => navigate("/masuk")}
+                className="rounded-full bg-primary px-4 py-2 font-body text-sm font-semibold text-white transition-colors hover:bg-primary-dark"
+              >
+                Masuk
+              </button>
+            )}
             <button
-              onClick={() => navigate("/cek-pesanan")}
-              className="font-body text-sm font-semibold text-neutral-600 hover:text-primary transition-colors"
-            >
-              Pesanan Saya
-            </button>
-            <button
-              onClick={() => setCartOpen(true)}
+              onClick={() => (session ? setCartOpen(true) : openGate("Masuk atau daftar dulu untuk melihat dan mengisi keranjang."))}
               aria-label={`Buka keranjang, ${itemCount} item`}
               className="relative flex h-11 w-11 items-center justify-center rounded-full text-neutral-800 bg-neutral-100 transition-colors hover:bg-neutral-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
             >

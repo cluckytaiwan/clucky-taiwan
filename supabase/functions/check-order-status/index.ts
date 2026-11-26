@@ -13,8 +13,9 @@ function errorResponse(code: string, message: string, status: number) {
 }
 
 /**
- * Menampilkan status satu pesanan untuk pelanggan tanpa akun.
- * Dipanggil halaman "Cek Pesanan" (dan polling tiap beberapa detik setelah checkout).
+ * Menampilkan status satu pesanan milik pelanggan yang sedang login.
+ * Dipanggil halaman "Pesanan Saya" (dan pemeriksaan berkala setelah checkout).
+ * Wajib membawa token login (JWT); pesanan hanya ditampilkan bila milik akun tersebut.
  * Hasil: status pembayaran, status pesanan, dan daftar item pesanan tersebut.
  */
 Deno.serve(async (req) => {
@@ -29,23 +30,32 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
     );
 
-    const { kode_pesanan, customer_phone } = await req.json();
-
-    if (!kode_pesanan || !customer_phone) {
-      return errorResponse("VALIDATION_ERROR", "Kode Pesanan dan nomor HP wajib diisi", 400);
+    // Identitas dari token login yang diverifikasi Supabase Auth
+    const bearer = (req.headers.get("Authorization") ?? "").replace(/^Bearer\s+/i, "");
+    const { data: userData, error: userError } = bearer
+      ? await supabase.auth.getUser(bearer)
+      : { data: null, error: new Error("no token") };
+    if (userError || !userData?.user) {
+      return errorResponse("UNAUTHORIZED", "Silakan login untuk melihat pesanan", 401);
     }
 
-    // Wajib kode pesanan DAN nomor HP yang cocok, agar orang lain tidak bisa
-    // melihat pesanan dengan menebak-nebak kode saja
+    const { kode_pesanan } = await req.json();
+
+    if (!kode_pesanan) {
+      return errorResponse("VALIDATION_ERROR", "Kode Pesanan wajib diisi", 400);
+    }
+
+    // Pesanan hanya ditemukan bila kodenya cocok DAN milik akun yang login,
+    // sehingga orang lain tidak bisa melihatnya walau menebak kodenya
     const { data: rawOrder, error } = await supabase
       .from("pesanan")
       .select("id, status_pembayaran, status_pesanan, total_harga, created_at, updated_at, nama_pelanggan, catatan, kode_pesanan, snap_token")
       .eq("kode_pesanan", kode_pesanan.trim().toUpperCase())
-      .eq("no_hp_pelanggan", customer_phone.trim())
+      .eq("user_id", userData.user.id)
       .single();
 
     if (error || !rawOrder) {
-      return errorResponse("ORDER_NOT_FOUND", "Pesanan tidak ditemukan atau nomor telepon tidak cocok", 404);
+      return errorResponse("ORDER_NOT_FOUND", "Pesanan tidak ditemukan", 404);
     }
 
     const order = {
