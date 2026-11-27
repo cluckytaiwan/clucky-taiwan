@@ -103,11 +103,6 @@ export default function AdminLayout() {
           </button>}
         </div>
 
-        {/* Akun yang sedang login (peran sudah tampil di logo: Admin / Owner) */}
-        <div className="px-4 py-3 border-b border-neutral-200">
-          <p className="truncate text-sm font-semibold text-neutral-800">{nama}</p>
-        </div>
-
         {/* Nav */}
         <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
           {isOwner ? (
@@ -151,8 +146,9 @@ export default function AdminLayout() {
 
         </nav>
 
-        {/* Logout */}
+        {/* Akun yang sedang login + Logout */}
         <div className="p-4 border-t border-neutral-200">
+          <p className="mb-2 truncate px-4 text-sm font-semibold text-neutral-800">{nama}</p>
           <button
             onClick={handleLogout}
             className="flex w-full items-center gap-3 px-4 py-3 rounded-xl transition-colors font-medium text-sm text-danger hover:bg-red-50"
