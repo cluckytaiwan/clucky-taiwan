@@ -1,6 +1,6 @@
 // src/utils/printReceipt.js
 //
-// Cetak struk satu pesanan (lebar 80 mm, cocok untuk printer thermal maupun A4).
+// Cetak struk satu pesanan (lebar kertas 58 mm (area cetak ±48 mm, printer thermal 57–58 mm)).
 // Memakai iframe tersembunyi + window.print(), tanpa library tambahan.
 import { formatRupiah } from "./formatCurrency";
 
@@ -31,15 +31,15 @@ function buildHtml(order) {
 
   return `<!doctype html><html><head><meta charset="utf-8"><title>Struk ${esc(kode)}</title>
 <style>
-@page { size: 80mm auto; margin: 4mm; }
+@page { size: 58mm auto; margin: 0; }
 * { box-sizing: border-box; }
-body { width: 72mm; margin: 0 auto; font: 12px/1.4 "Courier New", monospace; color: #000; }
+body { width: 48mm; margin: 0 auto; padding: 3mm 0; font: 11px/1.35 "Courier New", monospace; color: #000; }
 .c { text-align: center; } .b { font-weight: bold; }
-h1 { font-size: 16px; margin: 0; }
+h1 { font-size: 14px; margin: 0; }
 hr { border: 0; border-top: 1px dashed #000; margin: 6px 0; }
 .row { display: flex; justify-content: space-between; gap: 8px; margin: 2px 0; }
-.nama { flex: 1; } .rp { white-space: nowrap; } .sub { font-size: 10px; } .qty { white-space: nowrap; }
-.total { font-size: 14px; font-weight: bold; }
+.nama { flex: 1; } .rp { white-space: nowrap; } .sub { font-size: 9px; } .qty { white-space: nowrap; }
+.total { font-size: 12px; font-weight: bold; }
 </style></head><body>
 <div class="c"><h1>Clucky Taiwan</h1><div>Struk Pesanan</div></div>
 <hr>
