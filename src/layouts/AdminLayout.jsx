@@ -104,12 +104,9 @@ export default function AdminLayout() {
           </button>}
         </div>
 
-        {/* Akun yang sedang login */}
+        {/* Akun yang sedang login (peran sudah tampil di logo: Admin / Owner) */}
         <div className="px-4 py-3 border-b border-neutral-200">
-          <p className="text-[10px] font-bold uppercase tracking-widest text-neutral-400">
-            {isOwner ? "Login sebagai Owner" : "Login sebagai Admin"}
-          </p>
-          <p className="mt-0.5 truncate text-sm font-semibold text-neutral-800">{nama}</p>
+          <p className="truncate text-sm font-semibold text-neutral-800">{nama}</p>
         </div>
 
         {/* Nav */}
