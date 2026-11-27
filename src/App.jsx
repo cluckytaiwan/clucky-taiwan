@@ -107,8 +107,8 @@ export default function App() {
             <Route index element={<AdminHome />} />
             {/* Admin: operasional */}
             <Route path="pesanan" element={only(["admin"], <AdminTodayOrders />)} />
-            <Route path="categories" element={only(["admin"], <AdminCategories />)} />
-            <Route path="products" element={only(["admin"], <AdminProducts />)} />
+            <Route path="categories" element={only(["admin", "owner"], <AdminCategories />)} />
+            <Route path="products" element={only(["admin", "owner"], <AdminProducts />)} />
             {/* Owner: laporan, penjualan (hanya baca), akun admin */}
             <Route path="dashboard" element={only(["owner"], <AdminDashboard />)} />
             <Route path="sales" element={only(["owner"], <AdminSales />)} />
