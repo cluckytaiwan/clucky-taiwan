@@ -1,6 +1,7 @@
 // src/pages/public/LoginPage.jsx
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import toast from "react-hot-toast";
 import { useAuth } from "../../context/AuthContext";
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -56,7 +57,11 @@ export default function LoginPage() {
         setServerError(/registered|already/i.test(error.message) ? "Email sudah terdaftar" : "Pendaftaran gagal, coba lagi");
       } else if (needsConfirmation) {
         setNotice("Pendaftaran berhasil. Cek email kamu untuk konfirmasi, lalu masuk.");
+        toast.success("Pendaftaran berhasil! Cek email untuk konfirmasi.", { duration: 5000 });
         setMode("masuk");
+      } else {
+        // Langsung masuk: halaman akan dialihkan, toast tetap tampil (Toaster global di App)
+        toast.success(`Pendaftaran berhasil! Selamat datang, ${form.nama.trim()}.`, { duration: 4000 });
       }
     }
     setLoading(false);
