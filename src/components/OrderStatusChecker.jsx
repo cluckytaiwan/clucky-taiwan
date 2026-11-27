@@ -158,6 +158,18 @@ function OrderProgress({ status, fulfillmentStatus, paidAt }) {
   );
 }
 
+// Filter riwayat pesanan. "Lunas" = semua pesanan yang sudah dibayar (apa pun tahap pengerjaannya).
+const GAGAL = ["kadaluarsa", "dibatalkan", "ditolak", "dikembalikan"];
+const FILTERS = [
+  { id: "semua", label: "Semua", match: () => true },
+  { id: "menunggu", label: "Menunggu Bayar", match: (o) => o.status_pembayaran === "menunggu_pembayaran" },
+  { id: "lunas", label: "Lunas", match: (o) => o.status_pembayaran === "lunas" },
+  { id: "diproses", label: "Diproses", match: (o) => o.status_pembayaran === "lunas" && o.status_pesanan === "diproses" },
+  { id: "siap", label: "Siap Diambil", match: (o) => o.status_pembayaran === "lunas" && o.status_pesanan === "dikirim" },
+  { id: "selesai", label: "Selesai", match: (o) => o.status_pembayaran === "lunas" && o.status_pesanan === "selesai" },
+  { id: "gagal", label: "Dibatalkan", match: (o) => GAGAL.includes(o.status_pembayaran) },
+];
+
 export default function OrderStatusChecker() {
   const [result, setResult] = useState(null);
   const [error, setError] = useState("");
@@ -166,6 +178,7 @@ export default function OrderStatusChecker() {
   // Riwayat pesanan milik akun (dari database), terbaru di atas
   const [history, setHistory] = useState([]);
   const [historyLoading, setHistoryLoading] = useState(true);
+  const [filter, setFilter] = useState("semua");
   // isLive: true saat koneksi Supabase Realtime aktif
   const [isLive, setIsLive] = useState(false);
 
@@ -195,6 +208,9 @@ export default function OrderStatusChecker() {
   }, []);
 
   useEffect(() => { loadHistory(); }, [loadHistory]);
+
+  const activeFilter = FILTERS.find((f) => f.id === filter) ?? FILTERS[0];
+  const filteredHistory = history.filter(activeFilter.match);
 
   function handleHistoryClick(order) {
     performCheck(order.kode_pesanan);
@@ -273,8 +289,35 @@ export default function OrderStatusChecker() {
                 <History size={20} className="text-neutral-500" />
                 <h3 className="font-display font-bold text-lg text-neutral-900">Riwayat Pesanan Anda</h3>
               </div>
+              {/* Filter status */}
+              <div className="-mx-4 mb-4 flex gap-2 overflow-x-auto px-4 pb-1 sm:mx-0 sm:px-0" role="tablist" aria-label="Filter status pesanan">
+                {FILTERS.map((f) => {
+                  const count = history.filter(f.match).length;
+                  const active = f.id === filter;
+                  return (
+                    <button
+                      key={f.id}
+                      type="button"
+                      role="tab"
+                      aria-selected={active}
+                      onClick={() => setFilter(f.id)}
+                      className={`shrink-0 rounded-full border px-3.5 py-1.5 text-sm font-semibold transition-colors ${
+                        active ? "border-primary bg-primary text-white" : "border-neutral-200 bg-white text-neutral-600 hover:border-primary/40"
+                      }`}
+                    >
+                      {f.label}
+                      <span className={`ml-1.5 text-xs ${active ? "text-white/80" : "text-neutral-400"}`}>{count}</span>
+                    </button>
+                  );
+                })}
+              </div>
+              {filteredHistory.length === 0 && (
+                <p className="rounded-2xl border border-dashed border-neutral-200 py-12 text-center text-sm text-neutral-500">
+                  Tidak ada pesanan dengan status “{activeFilter.label}”.
+                </p>
+              )}
               <div className="space-y-3">
-                {history.map((order) => (
+                {filteredHistory.map((order) => (
                   <button
                     type="button"
                     key={order.id}
