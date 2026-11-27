@@ -28,7 +28,6 @@ export default function AdminLayout() {
   const [lowStockCount, setLowStockCount] = useState(0);
 
   useEffect(() => {
-    if (isOwner) return; // badge stok hanya untuk Admin (yang mengelola produk)
     async function fetchLowStock() {
       const { count } = await supabase
         .from("produk")
@@ -38,7 +37,7 @@ export default function AdminLayout() {
       setLowStockCount(count || 0);
     }
     fetchLowStock();
-  }, [isOwner]);
+  }, []);
 
   // ── Realtime channel bersama ──────────────────────────────────
   // Setup satu channel untuk seluruh area admin (Sales + Dashboard).
@@ -116,7 +115,7 @@ export default function AdminLayout() {
         <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
           {isOwner ? (
             <>
-              {/* Owner: laporan, penjualan (hanya baca), akun admin */}
+              {/* Owner: laporan, penjualan (hanya baca), akun admin, + kelola katalog */}
               <NavLink to="/admin/dashboard" icon={LayoutDashboard} label="Dasbor Laporan" />
               <NavLink to="/admin/sales" icon={ShoppingBag} label="Penjualan" />
               <NavLink to="/admin/akun" icon={Users} label="Akun Admin" />
@@ -125,31 +124,34 @@ export default function AdminLayout() {
             <>
               {/* Admin: operasional */}
               <NavLink to="/admin/pesanan" icon={ClipboardList} label="Pesanan Hari Ini" />
-              <NavLink to="/admin/categories" icon={Tags} label="Kategori" />
-
-              {/* Produk — badge stok rendah langsung di nav item */}
-              <Link
-                to="/admin/products"
-                className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-colors font-medium text-sm ${
-                  currentPath === "/admin/products"
-                    ? "bg-primary text-white shadow-sm"
-                    : "text-neutral-600 hover:bg-primary/10 hover:text-primary"
-                }`}
-              >
-                <Package size={18} />
-                <span className="flex-1">Produk</span>
-                {lowStockCount > 0 && (
-                  <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${
-                    currentPath === "/admin/products"
-                      ? "bg-white/20 text-white"
-                      : "bg-amber-100 text-amber-700"
-                  }`}>
-                    {lowStockCount}
-                  </span>
-                )}
-              </Link>
             </>
           )}
+
+          {/* Katalog: admin dan owner sama-sama boleh mengelola */}
+          <NavLink to="/admin/categories" icon={Tags} label="Kategori" />
+
+          {/* Produk — badge stok rendah langsung di nav item */}
+          <Link
+            to="/admin/products"
+            className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-colors font-medium text-sm ${
+              currentPath === "/admin/products"
+                ? "bg-primary text-white shadow-sm"
+                : "text-neutral-600 hover:bg-primary/10 hover:text-primary"
+            }`}
+          >
+            <Package size={18} />
+            <span className="flex-1">Produk</span>
+            {lowStockCount > 0 && (
+              <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${
+                currentPath === "/admin/products"
+                  ? "bg-white/20 text-white"
+                  : "bg-amber-100 text-amber-700"
+              }`}>
+                {lowStockCount}
+              </span>
+            )}
+          </Link>
+
         </nav>
 
         {/* Logout */}
