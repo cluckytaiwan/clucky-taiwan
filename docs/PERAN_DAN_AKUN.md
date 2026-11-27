@@ -7,11 +7,11 @@ Ringkasan perubahan untuk revisi tugas akhir: login pelanggan, tiga peran, keran
 |---|---|---|
 | Pelanggan | akun login yang **tidak** ada di tabel `admin` | Lihat katalog tanpa login. Keranjang, checkout, dan Pesanan Saya wajib login. Hanya melihat pesanan miliknya (RLS `user_id`). |
 | Admin | baris tabel `admin` dengan `role = 'admin'` | Pesanan Hari Ini (+ omzet harian), ubah status pesanan, kelola produk/varian/kategori. |
-| Owner | baris tabel `admin` dengan `role = 'owner'` | Dasbor laporan, Penjualan (hanya baca), kelola akun admin. **Tidak** memproses pesanan dan tidak bisa menulis produk/kategori (RLS). |
+| Owner | baris tabel `admin` dengan `role = 'owner'` | Dasbor laporan, Penjualan (hanya baca), kelola akun admin, kelola produk/varian/kategori (sama seperti Admin). **Tidak** memproses pesanan (RLS). |
 
 ## Perubahan basis data (`supabase/migrations/0014_peran_pelanggan_keranjang.sql`)
 - `admin`: kolom `role`, `nama`, `email`; fungsi RLS `is_staff()`, `is_admin_role()`, `is_owner()`.
-- Policy tulis produk/kategori/varian/gambar/status pesanan → hanya `role = 'admin'`; baca pesanan → admin & owner.
+- Policy tulis produk/kategori/varian/gambar → admin & owner (`is_staff()`, migrasi 0015); ubah status pesanan → hanya `role = 'admin'`; baca pesanan → admin & owner.
 - `profil` (nama pelanggan, dibuat otomatis oleh trigger saat daftar).
 - `pesanan.user_id`; `no_hp_pelanggan` dan `alamat_pelanggan` tidak wajib lagi (checkout hanya meminta nama).
 - `keranjang_item`: keranjang per akun (menggantikan `localStorage`).
