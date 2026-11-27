@@ -1,5 +1,6 @@
 // src/components/admin/OrderDetailModal.jsx
-import { X } from "lucide-react";
+import { X, Printer } from "lucide-react";
+import { printReceipt } from "../../utils/printReceipt";
 import { formatRupiah } from "../../utils/formatCurrency";
 import FulfillmentDropdown from "./FulfillmentDropdown";
 import { fulfillmentLabel } from "../../constants/orderStatus";
@@ -55,12 +56,22 @@ export default function OrderDetailModal({ order, onClose, onUpdate, loadingId, 
             </div>
             <p className="text-xs text-neutral-400 mt-0.5">{formatDate(order.created_at)}</p>
           </div>
+          <div className="flex items-center gap-2 shrink-0">
+          {!readOnly && (
+            <button
+              onClick={() => printReceipt(order)}
+              className="flex items-center gap-1.5 h-8 px-3 rounded-full bg-neutral-100 hover:bg-neutral-200 transition-colors text-neutral-600 text-xs font-semibold"
+            >
+              <Printer size={14} /> Cetak Struk
+            </button>
+          )}
           <button
             onClick={onClose}
             className="w-8 h-8 flex items-center justify-center rounded-full bg-neutral-100 hover:bg-neutral-200 transition-colors text-neutral-500 shrink-0"
           >
             <X size={16} />
           </button>
+          </div>
         </div>
 
         {/* Body */}

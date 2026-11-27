@@ -22,6 +22,7 @@ const AdminSales = lazy(() => import("./pages/admin/AdminSales"));
 const AdminProducts = lazy(() => import("./pages/admin/AdminProducts"));
 const AdminCategories = lazy(() => import("./pages/admin/AdminCategories"));
 const AdminTodayOrders = lazy(() => import("./pages/admin/AdminTodayOrders"));
+const AdminRekapMenu = lazy(() => import("./pages/admin/AdminRekapMenu"));
 const AdminAccounts = lazy(() => import("./pages/admin/AdminAccounts"));
 
 const AdminLayout = lazy(() => import("./layouts/AdminLayout"));
@@ -107,6 +108,7 @@ export default function App() {
             <Route index element={<AdminHome />} />
             {/* Admin: operasional */}
             <Route path="pesanan" element={only(["admin"], <AdminTodayOrders />)} />
+            <Route path="rekap-menu" element={only(["admin"], <AdminRekapMenu />)} />
             <Route path="categories" element={only(["admin", "owner"], <AdminCategories />)} />
             <Route path="products" element={only(["admin", "owner"], <AdminProducts />)} />
             {/* Owner: laporan, penjualan (hanya baca), akun admin */}

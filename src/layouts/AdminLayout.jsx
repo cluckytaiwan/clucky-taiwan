@@ -2,7 +2,7 @@ import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import {
   LayoutDashboard, Package, Tags, LogOut,
-  Bell, BellOff, ShoppingBag, ClipboardList, Users,
+  Bell, BellOff, ShoppingBag, ClipboardList, Users, BarChart3,
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import { useOrderNotification } from "../context/OrderNotificationContext";
@@ -116,6 +116,7 @@ export default function AdminLayout() {
             <>
               {/* Admin: operasional */}
               <NavLink to="/admin/pesanan" icon={ClipboardList} label="Pesanan Hari Ini" />
+              <NavLink to="/admin/rekap-menu" icon={BarChart3} label="Rekap Menu" />
             </>
           )}
 

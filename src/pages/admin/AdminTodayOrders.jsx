@@ -4,7 +4,8 @@
 // Admin memproses pesanan di sini (ubah status). Daftar diperbarui otomatis lewat
 // Supabase Realtime (channel bersama dari AdminLayout → ordersStore.lastChangeAt).
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Loader2, ClipboardList, Wallet, Clock, ChefHat } from "lucide-react";
+import { Loader2, ClipboardList, Wallet, Clock, ChefHat, Printer } from "lucide-react";
+import { printReceipt } from "../../utils/printReceipt";
 import { supabase } from "../../lib/supabaseClient";
 import { useOrdersStore } from "../../store/ordersStore";
 import { formatRupiah } from "../../utils/formatCurrency";
@@ -160,6 +161,14 @@ export default function AdminTodayOrders() {
                     <span className={`inline-block text-xs font-semibold px-2.5 py-1 rounded-full border whitespace-nowrap ${ps.badge}`}>
                       {ps.label}
                     </span>
+                    <button
+                      onClick={(e) => { e.stopPropagation(); printReceipt(o); }}
+                      title="Cetak struk"
+                      aria-label={`Cetak struk ${o.kode_pesanan}`}
+                      className="flex h-8 w-8 items-center justify-center rounded-full bg-neutral-100 text-neutral-600 transition-colors hover:bg-neutral-200"
+                    >
+                      <Printer size={15} />
+                    </button>
                     <div className="w-36" onClick={(e) => e.stopPropagation()}>
                       {o.status_pembayaran === "lunas" ? (
                         <FulfillmentDropdown order={o} onUpdate={handleUpdate} loadingId={loadingId} />
