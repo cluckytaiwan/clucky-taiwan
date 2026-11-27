@@ -13,6 +13,7 @@ import CheckoutPage from "./pages/public/CheckoutPage";
 import OrderStatusPage from "./pages/public/OrderStatusPage";
 import ProductDetailPage from "./pages/public/ProductDetailPage";
 import LoginPage from "./pages/public/LoginPage";
+import ProfilePage from "./pages/public/ProfilePage";
 
 // Halaman pengelola — lazy loaded agar tidak masuk bundle publik
 const AdminLogin = lazy(() => import("./pages/admin/AdminLogin"));
@@ -78,6 +79,10 @@ export default function App() {
           <Route
             path="/checkout"
             element={<ProtectedRoute roles={["pelanggan"]}><CheckoutPage /></ProtectedRoute>}
+          />
+          <Route
+            path="/profil"
+            element={<ProtectedRoute roles={["pelanggan"]}><ProfilePage /></ProtectedRoute>}
           />
           <Route
             path="/cek-pesanan"

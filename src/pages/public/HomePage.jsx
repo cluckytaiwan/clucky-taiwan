@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { ShoppingBag, LogOut, User } from "lucide-react";
+import { ShoppingBag, LogOut } from "lucide-react";
 import ProductCard from "../../components/ProductCard";
 import CartDrawer from "../../components/CartDrawer";
 import BudgetRecommender from "../../components/BudgetRecommender";
@@ -8,6 +8,7 @@ import StoreFooter from "../../components/StoreFooter";
 import { useCartStore } from "../../store/cartStore";
 import { useAuthGateStore } from "../../store/authGateStore";
 import { useAuth } from "../../context/AuthContext";
+import UserMenu from "../../components/UserMenu";
 import { useProducts } from "../../hooks/useProducts";
 import heroImage from "../../assets/hero.jpg";
 
@@ -16,7 +17,7 @@ export default function HomePage() {
   const [cartOpen, setCartOpen] = useState(false);
   const itemCount = useCartStore((s) => s.getItemCount());
   const navigate = useNavigate();
-  const { session, role, nama, signOut } = useAuth();
+  const { session, role, signOut } = useAuth();
   const openGate = useAuthGateStore((s) => s.openGate);
   const { products, loading, error } = useProducts();
   const [activeCategory, setActiveCategory] = useState("Semua");
@@ -67,16 +68,14 @@ export default function HomePage() {
               </button>
             )}
             {session ? (
-              <button
-                onClick={() => signOut()}
-                title="Keluar"
-                className="flex items-center gap-1.5 font-body text-sm font-semibold text-neutral-600 hover:text-primary transition-colors"
-              >
-                <User size={16} className="hidden sm:block" />
-                <span className="hidden max-w-[110px] truncate sm:inline">{nama.split(" ")[0]}</span>
-                <LogOut size={16} />
-                <span className="sr-only">Keluar</span>
-              </button>
+              role === "pelanggan" ? <UserMenu /> : (
+                <button
+                  onClick={() => signOut()}
+                  className="flex items-center gap-1.5 font-body text-sm font-semibold text-neutral-600 hover:text-primary transition-colors"
+                >
+                  <LogOut size={16} /> Keluar
+                </button>
+              )
             ) : (
               <button
                 onClick={() => navigate("/masuk")}

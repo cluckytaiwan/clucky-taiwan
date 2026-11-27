@@ -88,10 +88,28 @@ export function AuthProvider({ children }) {
     await supabase.auth.signOut();
   }
 
+  /** Ubah nama tampilan (tabel profil; RLS: hanya baris milik sendiri). Hasil: error atau null. */
+  async function updateNama(namaBaru) {
+    const { error } = await supabase
+      .from("profil")
+      .update({ nama: namaBaru.trim() })
+      .eq("user_id", session.user.id);
+    if (!error) setNama(namaBaru.trim());
+    return error;
+  }
+
+  /** Ganti kata sandi akun yang sedang login (Supabase Auth). Hasil: error atau null. */
+  async function updatePassword(passwordBaru) {
+    const { error } = await supabase.auth.updateUser({ password: passwordBaru });
+    return error;
+  }
+
   const isStaff = role === "admin" || role === "owner";
 
   return (
-    <AuthContext.Provider value={{ session, role, nama, isStaff, loading, signIn, signUp, signOut }}>
+    <AuthContext.Provider
+      value={{ session, role, nama, email: session?.user?.email ?? "", isStaff, loading, signIn, signUp, signOut, updateNama, updatePassword }}
+    >
       {children}
     </AuthContext.Provider>
   );
