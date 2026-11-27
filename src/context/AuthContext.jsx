@@ -1,5 +1,5 @@
 // src/context/AuthContext.jsx
-import { createContext, useContext, useEffect, useState } from "react";
+import { createContext, useContext, useEffect, useRef, useState } from "react";
 import { supabase } from "../lib/supabaseClient";
 import { useCartStore } from "../store/cartStore";
 
@@ -20,14 +20,27 @@ export function AuthProvider({ children }) {
   const [role, setRole] = useState(null);
   const [nama, setNama] = useState("");
   const [loading, setLoading] = useState(true);
+  // Penanda permintaan terbaru + akun yang peran/namanya sedang tampil. Mencegah hasil
+  // baca peran dari akun sebelumnya (mis. owner) dipakai untuk akun yang baru masuk (admin).
+  const requestId = useRef(0);
+  const roleUserId = useRef(null);
 
   useEffect(() => {
     let active = true;
 
     async function applySession(next) {
       if (!active) return;
+      const myRequest = ++requestId.current;
       setSession(next);
+      if (next && roleUserId.current !== next.user.id) {
+        // Akun berbeda dari yang perannya sedang tampil: kosongkan dulu supaya halaman
+        // menunggu ("Memuat...") alih-alih memakai peran akun lama.
+        roleUserId.current = null;
+        setRole(null);
+        setNama("");
+      }
       if (!next) {
+        roleUserId.current = null;
         setRole(null);
         setNama("");
         useCartStore.getState().reset();
@@ -38,8 +51,9 @@ export function AuthProvider({ children }) {
           supabase.from("admin").select("role, nama").eq("user_id", next.user.id).maybeSingle(),
           supabase.from("profil").select("nama").eq("user_id", next.user.id).maybeSingle(),
         ]);
-        if (!active) return;
+        if (!active || myRequest !== requestId.current) return;
         const r = adminRow?.role ?? "pelanggan";
+        roleUserId.current = next.user.id;
         setRole(r);
         setNama(adminRow?.nama || profil?.nama || next.user.email?.split("@")[0] || "");
         // Keranjang hanya untuk pelanggan; staf tidak berbelanja
@@ -47,7 +61,10 @@ export function AuthProvider({ children }) {
         else useCartStore.getState().reset();
       } catch (err) {
         console.error("Gagal membaca peran akun:", err);
-        if (active) setRole("pelanggan");
+        if (active && myRequest === requestId.current) {
+          roleUserId.current = next.user.id;
+          setRole("pelanggan");
+        }
       }
     }
 
@@ -86,6 +103,14 @@ export function AuthProvider({ children }) {
 
   async function signOut() {
     await supabase.auth.signOut();
+    // Kosongkan status segera (jangan menunggu event), supaya login akun lain
+    // tidak sempat memakai peran akun sebelumnya.
+    requestId.current++;
+    roleUserId.current = null;
+    setSession(null);
+    setRole(null);
+    setNama("");
+    useCartStore.getState().reset();
   }
 
   /** Ubah nama tampilan (tabel profil; RLS: hanya baris milik sendiri). Hasil: error atau null. */
